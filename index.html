@@ -4,18 +4,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Consulta de Imóveis</title>
+    <title>Sistema de Consulta de Imóveis - MRV</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <style>
-        /* --- ESTILOS GERAIS --- */
+        /* --- ESTILOS GERAIS COM PALETA MRV --- */
         :root {
-            --primary-color: #004a99;
-            --secondary-color: #0056b3;
+            --primary-color: #E30613; /* Vermelho MRV */
+            --secondary-color: #0056A4; /* Azul MRV */
             --success-color: #28a745;
             --danger-color: #dc3545;
             --info-color: #17a2b8;
@@ -51,6 +50,27 @@
             border-radius: var(--border-radius);
             box-shadow: var(--box-shadow);
             margin-bottom: 15px;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo-preview {
+            max-width: 150px;
+            max-height: 60px;
+            object-fit: contain;
+        }
+
+        .header-text {
+            flex-grow: 1;
         }
 
         header h1 { 
@@ -114,6 +134,40 @@
             color: #555;
         }
 
+        /* --- SEÇÃO DE LOGO --- */
+        .logo-section {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            margin-bottom: 15px;
+        }
+
+        .logo-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        #logoFileInput {
+            flex-grow: 1;
+            min-width: 200px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        #logoButton {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        #logoButton:hover {
+            background-color: #004080;
+        }
+
         /* --- SEÇÃO DE EXPORTAÇÃO --- */
         .export-controls {
             display: flex;
@@ -122,12 +176,12 @@
         }
         
         #exportButton {
-            background-color: #007bff;
+            background-color: var(--secondary-color);
             color: white;
         }
         
         #exportButton:hover {
-            background-color: #0069d9;
+            background-color: #004080;
         }
 
         /* --- SEÇÃO DE RESUMO --- */
@@ -259,7 +313,7 @@
         }
         
         .view-details-btn {
-            background-color: var(--info-color);
+            background-color: var(--primary-color);
             color: white;
             margin-top: 15px;
             width: 100%;
@@ -267,7 +321,7 @@
             font-size: 16px;
         }
         .view-details-btn:hover {
-            background-color: #138496;
+            background-color: #c00;
         }
 
         /* --- ESTILOS: Modal e Ficha --- */
@@ -312,7 +366,7 @@
         }
         
         #downloadPdfButton {
-            background-color: var(--danger-color);
+            background-color: var(--primary-color);
             color: white;
             margin-top: 20px;
             width: 100%;
@@ -320,7 +374,7 @@
             font-size: 16px;
         }
         #downloadPdfButton:hover {
-            background-color: #c82333;
+            background-color: #c00;
         }
 
         /* Estilos da Ficha (dentro do modal) */
@@ -331,9 +385,20 @@
             overflow: hidden;
         }
         .ficha-header {
-            background-color: var(--primary-color);
+            background-color: var(--secondary-color);
             color: white;
             padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .ficha-logo {
+            max-width: 120px;
+            max-height: 50px;
+            object-fit: contain;
+        }
+        .ficha-header-text {
+            flex-grow: 1;
         }
         .ficha-header h2 { 
             margin: 0; 
@@ -387,8 +452,14 @@
                 padding: 10px;
             }
             
-            header, .import-section, .export-section, .summary {
+            header, .import-section, .export-section, .summary, .logo-section {
                 padding: 15px;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+                gap: 10px;
             }
             
             .search-toggle {
@@ -422,12 +493,14 @@
                 grid-column: 1 / -1;
             }
             
-            .import-controls {
+            .import-controls, .logo-controls {
                 flex-direction: column;
             }
             
             .import-controls input,
-            .import-controls button {
+            .import-controls button,
+            .logo-controls input,
+            .logo-controls button {
                 width: 100%;
             }
         }
@@ -438,7 +511,7 @@
                 padding: 5px;
             }
 
-            header, .import-section, .export-section, .summary {
+            header, .import-section, .export-section, .summary, .logo-section {
                 padding: 12px;
             }
 
@@ -482,6 +555,9 @@
 
             .ficha-header {
                 padding: 15px;
+                flex-direction: column;
+                text-align: center;
+                gap: 10px;
             }
             
             .ficha-header h2 {
@@ -502,9 +578,26 @@
 
     <div class="container">
         <header>
-            <h1>Sistema de Consulta de Imóveis</h1>
-            <p>Consulta e filtragem de imóveis disponíveis.</p>
+            <div class="header-content">
+                <div class="logo-container">
+                    <img id="logoPreview" class="logo-preview" src="" alt="Logo MRV" style="display: none;">
+                </div>
+                <div class="header-text">
+                    <h1>Sistema de Consulta de Imóveis - MRV</h1>
+                    <p>Consulta e filtragem de imóveis disponíveis.</p>
+                </div>
+            </div>
         </header>
+
+        <div class="logo-section">
+            <h3>Logo da Construtora</h3>
+            <p>Carregue a logo da MRV para exibição no sistema e nas fichas PDF.</p>
+            <div class="logo-controls">
+                <input type="file" id="logoFileInput" accept="image/*">
+                <button id="logoButton">Carregar Logo</button>
+            </div>
+            <div id="logoStatusMessage"></div>
+        </div>
 
         <div class="import-section">
             <h3>Importar Dados</h3>
@@ -587,6 +680,12 @@
             const searchToggle = document.getElementById('searchToggle');
             const searchBar = document.getElementById('searchBar');
 
+            // Elementos do Logo
+            const logoFileInput = document.getElementById('logoFileInput');
+            const logoButton = document.getElementById('logoButton');
+            const logoPreview = document.getElementById('logoPreview');
+            const logoStatusMessage = document.getElementById('logoStatusMessage');
+
             // Elementos do Modal
             const modalContainer = document.getElementById('modalContainer');
             const modalClose = document.getElementById('modalClose');
@@ -596,6 +695,7 @@
             // Banco de dados em memória
             let databaseImoveis = [];
             const STORAGE_KEY = 'sistemaImoveisData';
+            const LOGO_STORAGE_KEY = 'sistemaImoveisLogo';
             
             // Referências às bibliotecas externas
             const { jsPDF } = window.jspdf;
@@ -629,6 +729,42 @@
             function formatarArea(valor) {
                 return `${parseFloat(valor) || 0} m²`;
             }
+
+            // --- FUNÇÕES DE LOGO ---
+
+            function loadLogoFromStorage() {
+                const logoData = localStorage.getItem(LOGO_STORAGE_KEY);
+                if (logoData) {
+                    logoPreview.src = logoData;
+                    logoPreview.style.display = 'block';
+                    logoStatusMessage.textContent = 'Logo carregada do armazenamento local.';
+                } else {
+                    logoStatusMessage.textContent = 'Nenhuma logo carregada. Por favor, carregue uma logo.';
+                }
+            }
+
+            logoButton.addEventListener('click', () => {
+                const file = logoFileInput.files[0];
+                if (!file) {
+                    alert('Por favor, selecione um arquivo de imagem primeiro.');
+                    return;
+                }
+
+                if (!file.type.match('image.*')) {
+                    alert('Por favor, selecione um arquivo de imagem válido (JPG, PNG, etc.).');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const logoData = event.target.result;
+                    localStorage.setItem(LOGO_STORAGE_KEY, logoData);
+                    logoPreview.src = logoData;
+                    logoPreview.style.display = 'block';
+                    logoStatusMessage.textContent = 'Logo carregada com sucesso!';
+                };
+                reader.readAsDataURL(file);
+            });
 
             // --- FUNÇÕES DE DADOS (IMPORTAR, SALVAR, LIMPAR) ---
 
@@ -1004,10 +1140,16 @@
                     return;
                 }
 
+                const logoData = localStorage.getItem(LOGO_STORAGE_KEY);
+                const logoHtml = logoData ? `<img src="${logoData}" class="ficha-logo" alt="Logo MRV">` : '';
+
                 fichaContent.innerHTML = `
                     <div class="ficha-header">
-                        <h2>${imovel.unidade}</h2>
-                        <p>${imovel.tipologia || 'N/D'} - ${imovel.cidade || 'N/D'}</p>
+                        ${logoHtml}
+                        <div class="ficha-header-text">
+                            <h2>${imovel.unidade}</h2>
+                            <p>${imovel.tipologia || 'N/D'} - ${imovel.cidade || 'N/D'}</p>
+                        </div>
                     </div>
                     <div class="ficha-body">
                         <div class="ficha-grid">
@@ -1104,24 +1246,28 @@
                 const contentWidth = pageWidth - 2 * margin;
                 
                 // Cabeçalho moderno com gradiente
-                doc.setFillColor(0, 74, 153);
+                doc.setFillColor(0, 86, 164); // Azul MRV
                 doc.rect(0, 0, pageWidth, 60, 'F');
                 
-                // Logo/ícone
-                doc.setFillColor(255, 255, 255);
-                doc.circle(30, 30, 15, 'F');
-                doc.setFillColor(0, 74, 153);
-                doc.circle(30, 30, 12, 'F');
+                // Logo
+                const logoData = localStorage.getItem(LOGO_STORAGE_KEY);
+                if (logoData) {
+                    try {
+                        doc.addImage(logoData, 'PNG', margin, 15, 40, 30);
+                    } catch (e) {
+                        console.error('Erro ao adicionar logo ao PDF:', e);
+                    }
+                }
                 
                 // Título
                 doc.setTextColor(255, 255, 255);
                 doc.setFontSize(22);
                 doc.setFont(undefined, 'bold');
-                doc.text('FICHA DO IMÓVEL', 60, 25);
+                doc.text('FICHA DO IMÓVEL', logoData ? margin + 50 : margin, 25);
                 
                 doc.setFontSize(14);
                 doc.setFont(undefined, 'normal');
-                doc.text('Sistema de Consulta de Imóveis', 60, 35);
+                doc.text('Sistema de Consulta de Imóveis - MRV', logoData ? margin + 50 : margin, 35);
                 
                 // Informações principais em destaque
                 doc.setTextColor(0, 0, 0);
@@ -1138,7 +1284,7 @@
                 
                 // Status com badge colorido
                 const statusColor = imovel.status && normalizarTexto(imovel.status) === 'disponivel' ? 
-                    [40, 167, 69] : [220, 53, 69];
+                    [40, 167, 69] : [227, 6, 19]; // Vermelho MRV para indisponível
                 
                 doc.setFillColor(...statusColor);
                 doc.roundedRect(pageWidth - margin - 60, 80, 60, 20, 3, 3, 'F');
@@ -1228,7 +1374,7 @@
                 doc.setFontSize(9);
                 doc.setTextColor(100, 100, 100);
                 doc.text(`Gerado em: ${data} às ${hora}`, margin, doc.internal.pageSize.getHeight() - 10);
-                doc.text('Sistema de Consulta de Imóveis', pageWidth - margin, doc.internal.pageSize.getHeight() - 10, { align: 'right' });
+                doc.text('Sistema de Consulta de Imóveis - MRV', pageWidth - margin, doc.internal.pageSize.getHeight() - 10, { align: 'right' });
                 
                 doc.save(`ficha_imovel_${imovel.unidade}.pdf`);
             }
@@ -1273,6 +1419,7 @@
 
             // Carregar dados ao iniciar
             loadDataFromStorage();
+            loadLogoFromStorage();
         });
     </script>
 </body>
