@@ -15,6 +15,7 @@
         :root {
             --primary-color: #E30613; /* Vermelho MRV */
             --secondary-color: #0056A4; /* Azul MRV */
+            --tertiary-color: #FFC107; /* Amarelo MRV */
             --success-color: #28a745;
             --danger-color: #dc3545;
             --info-color: #17a2b8;
@@ -30,7 +31,7 @@
         }
         
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Arial, sans-serif;
             background-color: #f0f2f5;
             color: #333;
             margin: 0;
@@ -44,7 +45,7 @@
             padding: 10px;
         }
 
-        header, .import-section, .export-section, .summary {
+        header, .config-section, .import-section, .export-section, .summary {
             background-color: #fff;
             padding: 20px;
             border-radius: var(--border-radius);
@@ -77,11 +78,63 @@
             color: var(--primary-color); 
             margin: 0 0 5px 0;
             font-size: 24px;
+            font-weight: 700;
         }
         
         header p {
             margin: 0;
             color: #666;
+        }
+
+        /* --- BOTÕES DE CONFIGURAÇÃO --- */
+        .config-toggle {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: bold;
+            transition: var(--transition);
+            margin-bottom: 15px;
+        }
+
+        .config-toggle:hover {
+            background-color: #004080;
+        }
+
+        .config-section {
+            display: none;
+        }
+
+        .config-section.active {
+            display: block;
+        }
+
+        /* --- SEÇÃO DE LOGO --- */
+        .logo-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        #logoFileInput {
+            flex-grow: 1;
+            min-width: 200px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        #logoButton {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        #logoButton:hover {
+            background-color: #004080;
         }
 
         /* --- SEÇÃO DE IMPORTAÇÃO --- */
@@ -134,40 +187,6 @@
             color: #555;
         }
 
-        /* --- SEÇÃO DE LOGO --- */
-        .logo-section {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: var(--border-radius);
-            box-shadow: var(--box-shadow);
-            margin-bottom: 15px;
-        }
-
-        .logo-controls {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        #logoFileInput {
-            flex-grow: 1;
-            min-width: 200px;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-
-        #logoButton {
-            background-color: var(--secondary-color);
-            color: white;
-        }
-
-        #logoButton:hover {
-            background-color: #004080;
-        }
-
         /* --- SEÇÃO DE EXPORTAÇÃO --- */
         .export-controls {
             display: flex;
@@ -195,16 +214,25 @@
         .summary-item {
             flex: 1;
             min-width: 150px;
-            padding: 10px;
+            padding: 15px;
             background-color: var(--light-color);
-            border-radius: 4px;
+            border-radius: var(--border-radius);
             text-align: center;
+            box-shadow: var(--box-shadow);
+            border-left: 4px solid var(--secondary-color);
         }
         
         .summary-item strong {
             display: block;
             margin-bottom: 5px;
             color: var(--dark-color);
+            font-size: 14px;
+        }
+
+        .summary-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--primary-color);
         }
 
         /* --- BARRA DE PESQUISA --- */
@@ -271,6 +299,9 @@
             background-color: var(--secondary-color); 
             color: white; 
             padding: 12px 15px; 
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         .property-card-header h3 { 
             margin: 0; 
@@ -278,6 +309,15 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            flex: 1;
+        }
+        .property-card-status {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
         }
         .property-card-body { 
             padding: 15px; 
@@ -409,6 +449,14 @@
             opacity: 0.9; 
             font-size: 16px; 
         }
+        .ficha-status {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 14px;
+        }
         
         .ficha-body { 
             padding: 20px; 
@@ -452,7 +500,7 @@
                 padding: 10px;
             }
             
-            header, .import-section, .export-section, .summary, .logo-section {
+            header, .config-section, .import-section, .export-section, .summary {
                 padding: 15px;
             }
             
@@ -511,7 +559,7 @@
                 padding: 5px;
             }
 
-            header, .import-section, .export-section, .summary, .logo-section {
+            header, .config-section, .import-section, .export-section, .summary {
                 padding: 12px;
             }
 
@@ -589,32 +637,36 @@
             </div>
         </header>
 
-        <div class="logo-section">
-            <h3>Logo da Construtora</h3>
-            <p>Carregue a logo da MRV para exibição no sistema e nas fichas PDF.</p>
-            <div class="logo-controls">
-                <input type="file" id="logoFileInput" accept="image/*">
-                <button id="logoButton">Carregar Logo</button>
-            </div>
-            <div id="logoStatusMessage"></div>
-        </div>
+        <button class="config-toggle" id="configToggle">Configurações do Sistema</button>
 
-        <div class="import-section">
-            <h3>Importar Dados</h3>
-            <p>Selecione um arquivo <strong>.csv, .xls ou .xlsx</strong> para importar ou atualizar os dados.</p>
-            <div class="import-controls">
-                <input type="file" id="csvFileInput" accept=".csv, .xls, .xlsx, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
-                <button id="importButton">Importar</button>
-                <button id="clearButton">Limpar Dados Salvos</button>
+        <div class="config-section" id="configSection">
+            <div class="logo-section">
+                <h3>Logo da Construtora</h3>
+                <p>Carregue a logo da MRV para exibição no sistema e nas fichas PDF.</p>
+                <div class="logo-controls">
+                    <input type="file" id="logoFileInput" accept="image/*">
+                    <button id="logoButton">Carregar Logo</button>
+                </div>
+                <div id="logoStatusMessage"></div>
             </div>
-            <div id="statusMessage"></div>
-        </div>
 
-        <div class="export-section">
-            <h3>Exportar Dados</h3>
-            <p>Exporte os dados filtrados para um arquivo CSV.</p>
-            <div class="export-controls">
-                <button id="exportButton">Exportar CSV</button>
+            <div class="import-section">
+                <h3>Importar Dados</h3>
+                <p>Selecione um arquivo <strong>.csv, .xls ou .xlsx</strong> para importar ou atualizar os dados.</p>
+                <div class="import-controls">
+                    <input type="file" id="csvFileInput" accept=".csv, .xls, .xlsx, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+                    <button id="importButton">Importar</button>
+                    <button id="clearButton">Limpar Dados Salvos</button>
+                </div>
+                <div id="statusMessage"></div>
+            </div>
+
+            <div class="export-section">
+                <h3>Exportar Dados</h3>
+                <p>Exporte os dados filtrados para um arquivo CSV.</p>
+                <div class="export-controls">
+                    <button id="exportButton">Exportar CSV</button>
+                </div>
             </div>
         </div>
 
@@ -686,6 +738,10 @@
             const logoPreview = document.getElementById('logoPreview');
             const logoStatusMessage = document.getElementById('logoStatusMessage');
 
+            // Elementos de Configuração
+            const configToggle = document.getElementById('configToggle');
+            const configSection = document.getElementById('configSection');
+
             // Elementos do Modal
             const modalContainer = document.getElementById('modalContainer');
             const modalClose = document.getElementById('modalClose');
@@ -729,6 +785,14 @@
             function formatarArea(valor) {
                 return `${parseFloat(valor) || 0} m²`;
             }
+
+            // --- FUNÇÕES DE CONFIGURAÇÃO ---
+
+            configToggle.addEventListener('click', () => {
+                configSection.classList.toggle('active');
+                configToggle.textContent = configSection.classList.contains('active') ? 
+                    'Ocultar Configurações' : 'Configurações do Sistema';
+            });
 
             // --- FUNÇÕES DE LOGO ---
 
@@ -981,9 +1045,18 @@
                     ) : 0;
                 
                 summaryContainer.innerHTML = `
-                    <div class="summary-item"><strong>Total de Imóveis:</strong> ${totalImoveis}</div>
-                    <div class="summary-item"><strong>Imóveis Disponíveis:</strong> ${imoveisDisponiveis}</div>
-                    <div class="summary-item"><strong>Valor Médio:</strong> ${formatarMoeda(valorMedio)}</div>
+                    <div class="summary-item">
+                        <strong>Total de Imóveis</strong>
+                        <div class="summary-value">${totalImoveis}</div>
+                    </div>
+                    <div class="summary-item">
+                        <strong>Imóveis Disponíveis</strong>
+                        <div class="summary-value">${imoveisDisponiveis}</div>
+                    </div>
+                    <div class="summary-item">
+                        <strong>Valor Médio</strong>
+                        <div class="summary-value">${formatarMoeda(valorMedio)}</div>
+                    </div>
                 `;
             }
 
@@ -1007,6 +1080,7 @@
                     card.innerHTML = `
                         <div class="property-card-header">
                             <h3>${imovel.unidade}</h3>
+                            <div class="property-card-status">${imovel.status || 'N/D'}</div>
                         </div>
                         <div class="property-card-body">
                             <div class="property-details">
@@ -1016,9 +1090,6 @@
                                 <strong>Tipologia:</strong>
                                 <span>${imovel.tipologia || 'N/D'}</span>
 
-                                <strong>Status:</strong>
-                                <span>${imovel.status || 'N/D'}</span>
-                                
                                 <strong>Área Interna:</strong>
                                 <span>${formatarArea(imovel.areaInterna)}</span>
                                 
@@ -1150,15 +1221,10 @@
                             <h2>${imovel.unidade}</h2>
                             <p>${imovel.tipologia || 'N/D'} - ${imovel.cidade || 'N/D'}</p>
                         </div>
+                        <div class="ficha-status">${imovel.status || 'N/D'}</div>
                     </div>
                     <div class="ficha-body">
                         <div class="ficha-grid">
-                            
-                            <div class="ficha-item ficha-item-full">
-                                <strong>Status</strong>
-                                <span>${imovel.status || 'N/D'}</span>
-                            </div>
-
                             <div class="ficha-item">
                                 <strong>Valor do Imóvel</strong>
                                 <span>${formatarMoeda(imovel.valorImovel)}</span>
@@ -1282,7 +1348,7 @@
                 doc.setFont(undefined, 'normal');
                 doc.text(`${imovel.tipologia || 'N/D'} - ${imovel.cidade || 'N/D'}`, margin + 10, 100);
                 
-                // Status com badge colorido
+                // Status com badge colorido - CORREÇÃO: posicionado corretamente
                 const statusColor = imovel.status && normalizarTexto(imovel.status) === 'disponivel' ? 
                     [40, 167, 69] : [227, 6, 19]; // Vermelho MRV para indisponível
                 
