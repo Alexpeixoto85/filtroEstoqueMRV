@@ -1103,66 +1103,132 @@
                 const margin = 20;
                 const contentWidth = pageWidth - 2 * margin;
                 
-                // Cabeçalho
+                // Cabeçalho moderno com gradiente
                 doc.setFillColor(0, 74, 153);
-                doc.rect(0, 0, pageWidth, 40, 'F');
+                doc.rect(0, 0, pageWidth, 60, 'F');
                 
+                // Logo/ícone
+                doc.setFillColor(255, 255, 255);
+                doc.circle(30, 30, 15, 'F');
+                doc.setFillColor(0, 74, 153);
+                doc.circle(30, 30, 12, 'F');
+                
+                // Título
                 doc.setTextColor(255, 255, 255);
-                doc.setFontSize(20);
-                doc.text('Ficha do Imóvel', margin, 25);
-                
-                // Informações principais
-                doc.setTextColor(0, 0, 0);
-                doc.setFontSize(16);
-                doc.text(imovel.unidade, margin, 60);
-                doc.setFontSize(12);
-                doc.text(`${imovel.tipologia || 'N/D'} - ${imovel.cidade || 'N/D'}`, margin, 70);
-                
-                // Status
-                doc.setDrawColor(0, 74, 153);
-                doc.setLineWidth(0.5);
-                doc.line(margin, 80, pageWidth - margin, 80);
+                doc.setFontSize(22);
+                doc.setFont(undefined, 'bold');
+                doc.text('FICHA DO IMÓVEL', 60, 25);
                 
                 doc.setFontSize(14);
-                doc.text('Status:', margin, 90);
+                doc.setFont(undefined, 'normal');
+                doc.text('Sistema de Consulta de Imóveis', 60, 35);
+                
+                // Informações principais em destaque
+                doc.setTextColor(0, 0, 0);
+                doc.setFillColor(245, 245, 245);
+                doc.roundedRect(margin, 75, contentWidth, 30, 3, 3, 'F');
+                
+                doc.setFontSize(18);
+                doc.setFont(undefined, 'bold');
+                doc.text(imovel.unidade, margin + 10, 90);
+                
                 doc.setFontSize(12);
-                doc.text(imovel.status || 'N/D', margin + 25, 90);
+                doc.setFont(undefined, 'normal');
+                doc.text(`${imovel.tipologia || 'N/D'} - ${imovel.cidade || 'N/D'}`, margin + 10, 100);
                 
-                // Detalhes em duas colunas
-                let yPosition = 110;
+                // Status com badge colorido
+                const statusColor = imovel.status && normalizarTexto(imovel.status) === 'disponivel' ? 
+                    [40, 167, 69] : [220, 53, 69];
                 
-                const col1 = margin;
-                const col2 = pageWidth / 2 + 10;
+                doc.setFillColor(...statusColor);
+                doc.roundedRect(pageWidth - margin - 60, 80, 60, 20, 3, 3, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(10);
+                doc.text(imovel.status || 'N/D', pageWidth - margin - 30, 92, { align: 'center' });
                 
-                // Coluna 1
-                doc.setFontSize(12);
-                doc.text(`Valor do Imóvel: ${formatarMoeda(imovel.valorImovel)}`, col1, yPosition);
-                doc.text(`Valor da Avaliação: ${formatarMoeda(imovel.valorAvaliacao)}`, col1, yPosition + 10);
-                doc.text(`Área Interna: ${formatarArea(imovel.areaInterna)}`, col1, yPosition + 20);
-                doc.text(`Área do Quintal: ${formatarArea(imovel.areaQuintal)}`, col1, yPosition + 30);
-                doc.text(`Área da Varanda: ${formatarArea(imovel.areaVaranda)}`, col1, yPosition + 40);
+                // Seções organizadas
+                let yPosition = 120;
                 
-                // Coluna 2
-                doc.text(`Regional: ${imovel.regional || 'N/D'}`, col2, yPosition);
-                doc.text(`Lado Nascente: ${imovel.ladoNascente || 'N/D'}`, col2, yPosition + 10);
-                doc.text(`Acabamento: ${imovel.tipoAcabamento || 'N/D'}`, col2, yPosition + 20);
-                doc.text(`Vagas Carro: ${imovel.vagasCarro || 'N/D'}`, col2, yPosition + 30);
-                doc.text(`Vagas Moto: ${imovel.vagasMoto || 'N/D'}`, col2, yPosition + 40);
+                // Seção 1: Valores
+                doc.setTextColor(0, 0, 0);
+                doc.setFontSize(14);
+                doc.setFont(undefined, 'bold');
+                doc.text('VALORES', margin, yPosition);
+                doc.setDrawColor(200, 200, 200);
+                doc.line(margin, yPosition + 2, margin + 40, yPosition + 2);
                 
-                yPosition += 60;
+                yPosition += 10;
                 
-                // Informações adicionais
-                doc.text(`Bom Pagador: ${formatarMoeda(imovel.bomPagador)}`, col1, yPosition);
-                doc.text(`Pagadoria: ${imovel.pagadoria || 'N/D'}`, col1, yPosition + 10);
-                doc.text(`Bônus: ${imovel.bonus || 'N/D'}`, col1, yPosition + 20);
-                doc.text(`Versão da Tabela: ${imovel.versaoTabela || 'N/D'}`, col2, yPosition);
-                doc.text(`Oportunidades: ${imovel.oportunidades || 'N/D'}`, col2, yPosition + 10);
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'normal');
+                doc.text(`Valor do Imóvel: ${formatarMoeda(imovel.valorImovel)}`, margin, yPosition);
+                doc.text(`Valor da Avaliação: ${formatarMoeda(imovel.valorAvaliacao)}`, pageWidth/2, yPosition);
+                yPosition += 7;
+                doc.text(`Bom Pagador: ${formatarMoeda(imovel.bomPagador)}`, margin, yPosition);
+                yPosition += 15;
+                
+                // Seção 2: Áreas
+                doc.setFontSize(14);
+                doc.setFont(undefined, 'bold');
+                doc.text('ÁREAS', margin, yPosition);
+                doc.line(margin, yPosition + 2, margin + 25, yPosition + 2);
+                
+                yPosition += 10;
+                
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'normal');
+                doc.text(`Área Interna: ${formatarArea(imovel.areaInterna)}`, margin, yPosition);
+                doc.text(`Área do Quintal: ${formatarArea(imovel.areaQuintal)}`, pageWidth/2, yPosition);
+                yPosition += 7;
+                doc.text(`Área da Varanda: ${formatarArea(imovel.areaVaranda)}`, margin, yPosition);
+                yPosition += 15;
+                
+                // Seção 3: Características
+                doc.setFontSize(14);
+                doc.setFont(undefined, 'bold');
+                doc.text('CARACTERÍSTICAS', margin, yPosition);
+                doc.line(margin, yPosition + 2, margin + 70, yPosition + 2);
+                
+                yPosition += 10;
+                
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'normal');
+                doc.text(`Regional: ${imovel.regional || 'N/D'}`, margin, yPosition);
+                doc.text(`Lado Nascente: ${imovel.ladoNascente || 'N/D'}`, pageWidth/2, yPosition);
+                yPosition += 7;
+                doc.text(`Acabamento: ${imovel.tipoAcabamento || 'N/D'}`, margin, yPosition);
+                doc.text(`Vagas Carro: ${imovel.vagasCarro || 'N/D'}`, pageWidth/2, yPosition);
+                yPosition += 7;
+                doc.text(`Vagas Moto: ${imovel.vagasMoto || 'N/D'}`, margin, yPosition);
+                yPosition += 15;
+                
+                // Seção 4: Informações Adicionais
+                doc.setFontSize(14);
+                doc.setFont(undefined, 'bold');
+                doc.text('INFORMAÇÕES ADICIONAIS', margin, yPosition);
+                doc.line(margin, yPosition + 2, margin + 95, yPosition + 2);
+                
+                yPosition += 10;
+                
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'normal');
+                doc.text(`Pagadoria: ${imovel.pagadoria || 'N/D'}`, margin, yPosition);
+                doc.text(`Bônus: ${imovel.bonus || 'N/D'}`, pageWidth/2, yPosition);
+                yPosition += 7;
+                doc.text(`Versão da Tabela: ${imovel.versaoTabela || 'N/D'}`, margin, yPosition);
+                doc.text(`Oportunidades: ${imovel.oportunidades || 'N/D'}`, pageWidth/2, yPosition);
                 
                 // Rodapé
                 const data = new Date().toLocaleDateString('pt-BR');
-                doc.setFontSize(10);
+                const hora = new Date().toLocaleTimeString('pt-BR');
+                
+                doc.setDrawColor(200, 200, 200);
+                doc.line(margin, doc.internal.pageSize.getHeight() - 20, pageWidth - margin, doc.internal.pageSize.getHeight() - 20);
+                
+                doc.setFontSize(9);
                 doc.setTextColor(100, 100, 100);
-                doc.text(`Gerado em: ${data}`, margin, doc.internal.pageSize.getHeight() - 10);
+                doc.text(`Gerado em: ${data} às ${hora}`, margin, doc.internal.pageSize.getHeight() - 10);
+                doc.text('Sistema de Consulta de Imóveis', pageWidth - margin, doc.internal.pageSize.getHeight() - 10, { align: 'right' });
                 
                 doc.save(`ficha_imovel_${imovel.unidade}.pdf`);
             }
