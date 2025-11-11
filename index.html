@@ -770,20 +770,32 @@
 
             function limparValorNumerico(valor) {
                 if (typeof valor !== 'string' && typeof valor !== 'number') return valor;
-                return String(valor)
+                
+                let valorString = String(valor);
+                
+                // Remove todos os pontos de milhar e substitui vírgula decimal por ponto
+                valorString = valorString
                     .replace('R$', '')       
                     .replace('m²', '')       
                     .replace(/\./g, '')      
                     .replace(',', '.')       
                     .trim();
+                
+                // Verifica se é um número válido
+                const numero = parseFloat(valorString);
+                return isNaN(numero) ? valor : numero;
             }
             
             function formatarMoeda(valor) {
-                return (parseFloat(valor) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                const numero = parseFloat(valor);
+                if (isNaN(numero)) return 'R$ 0,00';
+                return numero.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             }
             
             function formatarArea(valor) {
-                return `${parseFloat(valor) || 0} m²`;
+                const numero = parseFloat(valor);
+                if (isNaN(numero)) return '0 m²';
+                return `${numero.toLocaleString('pt-BR')} m²`;
             }
 
             // --- FUNÇÕES DE CONFIGURAÇÃO ---
@@ -976,6 +988,7 @@
                             if (camposTexto.includes(internalKey)) {
                                 value = removerAcentos(value);
                             } else if (camposNumericos.includes(internalKey)) {
+                                // CORREÇÃO: Preserva casas decimais corretamente
                                 value = limparValorNumerico(value);
                             }
                             
@@ -1040,9 +1053,9 @@
                 ).length;
                 
                 const valorMedio = totalImoveis > 0 ? 
-                    Math.round(databaseImoveis.reduce((sum, imovel) => 
+                    databaseImoveis.reduce((sum, imovel) => 
                         sum + (parseFloat(imovel.valorImovel) || 0), 0) / totalImoveis
-                    ) : 0;
+                    : 0;
                 
                 summaryContainer.innerHTML = `
                     <div class="summary-item">
