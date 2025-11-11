@@ -785,6 +785,35 @@
                 return isNaN(numero) ? valor : numero;
             }
             
+            // CORREÇÃO: Função específica para limpar valores monetários
+            function limparValorMonetario(valor) {
+                if (typeof valor !== 'string' && typeof valor !== 'number') return valor;
+                
+                let valorString = String(valor);
+                
+                // Remove caracteres não numéricos exceto ponto e vírgula
+                valorString = valorString
+                    .replace('R$', '')
+                    .replace(/[^\d,.]/g, '')
+                    .trim();
+                
+                // Se tiver ponto como separador de milhar e vírgula como decimal
+                if (valorString.includes('.') && valorString.includes(',')) {
+                    // Remove pontos de milhar e substitui vírgula por ponto
+                    valorString = valorString.replace(/\./g, '').replace(',', '.');
+                } 
+                // Se só tiver vírgula (formato brasileiro)
+                else if (valorString.includes(',') && !valorString.includes('.')) {
+                    // Substitui vírgula por ponto
+                    valorString = valorString.replace(',', '.');
+                }
+                // Se só tiver ponto, assume que já está no formato correto
+                
+                // Verifica se é um número válido
+                const numero = parseFloat(valorString);
+                return isNaN(numero) ? valor : numero;
+            }
+            
             // CORREÇÃO: Função específica para limpar valores de área
             function limparValorArea(valor) {
                 if (typeof valor !== 'string' && typeof valor !== 'number') return valor;
@@ -998,8 +1027,8 @@
                 };
                 
                 const camposTexto = ['regional', 'cidade', 'unidade', 'ladoNascente', 'tipologia', 'tipoAcabamento', 'status', 'pagadoria'];
-                const camposNumericos = ['valorImovel', 'valorAvaliacao', 'bomPagador'];
-                const camposArea = ['areaInterna', 'areaQuintal', 'areaVaranda']; // CORREÇÃO: Campos de área separados
+                const camposMonetarios = ['valorImovel', 'valorAvaliacao', 'bomPagador']; // CORREÇÃO: Campos monetários separados
+                const camposArea = ['areaInterna', 'areaQuintal', 'areaVaranda'];
                 
                 const newData = [];
 
@@ -1015,10 +1044,10 @@
                             
                             if (camposTexto.includes(internalKey)) {
                                 value = removerAcentos(value);
-                            } else if (camposNumericos.includes(internalKey)) {
-                                value = limparValorNumerico(value);
+                            } else if (camposMonetarios.includes(internalKey)) {
+                                // CORREÇÃO: Usa função específica para valores monetários
+                                value = limparValorMonetario(value);
                             } else if (camposArea.includes(internalKey)) {
-                                // CORREÇÃO: Usa função específica para áreas
                                 value = limparValorArea(value);
                             }
                             
@@ -1391,7 +1420,7 @@
                 doc.setFont(undefined, 'normal');
                 doc.text(`${imovel.tipologia || 'N/D'} - ${imovel.cidade || 'N/D'}`, margin + 10, 100);
                 
-                // Status com badge colorido - CORREÇÃO: posicionado corretamente
+                // Status com badge colorido
                 const statusColor = imovel.status && normalizarTexto(imovel.status) === 'disponivel' ? 
                     [40, 167, 69] : [227, 6, 19]; // Vermelho MRV para indisponível
                 
