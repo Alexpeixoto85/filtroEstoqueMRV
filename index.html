@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -786,6 +785,27 @@
                 return isNaN(numero) ? valor : numero;
             }
             
+            // CORREÇÃO: Função específica para limpar valores de área
+            function limparValorArea(valor) {
+                if (typeof valor !== 'string' && typeof valor !== 'number') return valor;
+                
+                let valorString = String(valor);
+                
+                // Remove caracteres não numéricos exceto ponto e vírgula
+                valorString = valorString
+                    .replace('m²', '')
+                    .replace('m', '')
+                    .replace(/[^\d,.]/g, '')
+                    .trim();
+                
+                // Substitui vírgula por ponto para conversão correta
+                valorString = valorString.replace(',', '.');
+                
+                // Verifica se é um número válido
+                const numero = parseFloat(valorString);
+                return isNaN(numero) ? valor : numero;
+            }
+            
             function formatarMoeda(valor) {
                 const numero = parseFloat(valor);
                 if (isNaN(numero)) return 'R$ 0,00';
@@ -795,7 +815,14 @@
             function formatarArea(valor) {
                 const numero = parseFloat(valor);
                 if (isNaN(numero)) return '0 m²';
-                return `${numero.toLocaleString('pt-BR')} m²`;
+                
+                // CORREÇÃO: Formata com 2 casas decimais para áreas
+                const numeroFormatado = numero.toLocaleString('pt-BR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+                
+                return `${numeroFormatado} m²`;
             }
 
             // --- FUNÇÕES DE CONFIGURAÇÃO ---
@@ -971,7 +998,8 @@
                 };
                 
                 const camposTexto = ['regional', 'cidade', 'unidade', 'ladoNascente', 'tipologia', 'tipoAcabamento', 'status', 'pagadoria'];
-                const camposNumericos = ['areaInterna', 'areaQuintal', 'areaVaranda', 'valorImovel', 'valorAvaliacao', 'bomPagador'];
+                const camposNumericos = ['valorImovel', 'valorAvaliacao', 'bomPagador'];
+                const camposArea = ['areaInterna', 'areaQuintal', 'areaVaranda']; // CORREÇÃO: Campos de área separados
                 
                 const newData = [];
 
@@ -988,8 +1016,10 @@
                             if (camposTexto.includes(internalKey)) {
                                 value = removerAcentos(value);
                             } else if (camposNumericos.includes(internalKey)) {
-                                // CORREÇÃO: Preserva casas decimais corretamente
                                 value = limparValorNumerico(value);
+                            } else if (camposArea.includes(internalKey)) {
+                                // CORREÇÃO: Usa função específica para áreas
+                                value = limparValorArea(value);
                             }
                             
                             imovel[internalKey] = value;
