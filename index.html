@@ -764,25 +764,7 @@
                 return removerAcentos(texto).toLowerCase().trim();
             }
 
-            function limparValorNumerico(valor) {
-                if (typeof valor !== 'string' && typeof valor !== 'number') return valor;
-                
-                let valorString = String(valor);
-                
-                // Remove todos os pontos de milhar e substitui vírgula decimal por ponto
-                valorString = valorString
-                    .replace('R$', '')       
-                    .replace('m²', '')       
-                    .replace(/\./g, '')      
-                    .replace(',', '.')       
-                    .trim();
-                
-                // Verifica se é um número válido
-                const numero = parseFloat(valorString);
-                return isNaN(numero) ? valor : numero;
-            }
-            
-            // CORREÇÃO: Função específica para limpar valores monetários
+            // Função específica para limpar valores monetários
             function limparValorMonetario(valor) {
                 // Se já for um número (lido do Excel com raw:true), apenas retorne
                 if (typeof valor === 'number') return valor;
@@ -814,7 +796,7 @@
                 return isNaN(numero) ? valor : numero;
             }
             
-            // CORREÇÃO: Função específica para limpar valores de área
+            // Função específica para limpar valores de área
             function limparValorArea(valor) {
                 // Se já for um número (lido do Excel com raw:true), apenas retorne
                 if (typeof valor === 'number') return valor;
@@ -848,7 +830,6 @@
                 const numero = parseFloat(valor);
                 if (isNaN(numero)) return '0 m²';
                 
-                // CORREÇÃO: Formata com 2 casas decimais para áreas
                 const numeroFormatado = numero.toLocaleString('pt-BR', {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2
@@ -963,9 +944,6 @@
                     const firstSheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[firstSheetName];
                     
-                    // --- MELHORIA APLICADA AQUI ---
-                    // 'raw: true' lê os valores numéricos brutos da planilha (ex: 150000.50)
-                    // 'raw: false' (o anterior) lia o texto formatado (ex: "R$ 150.000,50")
                     const rawDataList = XLSX.utils.sheet_to_json(worksheet, { 
                         raw: true, // Garante que números sejam lidos como números
                         defval: "" 
@@ -1009,31 +987,64 @@
                 processAndLoadData(rawDataList);
             }
 
+            // --- MELHORIA APLICADA (MAPEAMENTO FLEXÍVEL) ---
+            
+            /**
+             * Cria um mapa de lookup rápido de "qualquer-alias" para "chave-interna".
+             * @param {object} aliasConfig - O objeto de configuração standardFieldAliases.
+             * @returns {object} - Um mapa plano (ex: {'valor': 'valorImovel', 'preco': 'valorImovel'}).
+             */
+            function createFlexibleHeaderMap(aliasConfig) {
+                const map = {};
+                for (const internalKey in aliasConfig) {
+                    const aliases = aliasConfig[internalKey];
+                    for (const alias of aliases) {
+                        // A chave do mapa é o alias normalizado
+                        map[alias] = internalKey;
+                    }
+                }
+                return map;
+            }
+
             function processAndLoadData(rawDataList) {
-                const headerMapping = {
-                    'regional': 'regional',
-                    'cidade': 'cidade',
-                    'unidade': 'unidade',
-                    'lado nascente': 'ladoNascente',
-                    'tipologia': 'tipologia',
-                    'area interna': 'areaInterna',
-                    'area do quintal': 'areaQuintal',
-                    'area da varanda': 'areaVaranda',
-                    'tipo de acabamento': 'tipoAcabamento',
-                    'status da unidade': 'status',
-                    'valor do imovel': 'valorImovel',
-                    'vagas carro': 'vagasCarro',
-                    'vagas moto': 'vagasMoto',
-                    'valor da avaliacao': 'valorAvaliacao',
-                    'bom pagador total': 'bomPagador',
-                    'pagadoria': 'pagadoria',
-                    'bonus': 'bonus',
-                    'versao da tabela': 'versaoTabela',
-                    'oportunidades abertas': 'oportunidades'
+                
+                // --- MELHORIA: DICIONÁRIO DE APELIDOS ---
+                // Mapeia o campo interno do sistema (chave) para uma lista de
+                // possíveis nomes de coluna (normalizados) que sua planilha pode ter.
+                // ** SINTA-SE À VONTADE PARA ADICIONAR MAIS APELIDOS AQUI **
+                const standardFieldAliases = {
+                    // Chave interna: [Possíveis nomes de coluna (normalizados)]
+                    'unidade': ['unidade', 'imovel', 'apartamento', 'apto', 'bloco/apto', 'identificacao'],
+                    'cidade': ['cidade', 'municipio', 'praca'],
+                    'regional': ['regional', 'regiao'],
+                    'status': ['status da unidade', 'status', 'disponibilidade', 'disponivel'],
+                    'tipologia': ['tipologia', 'tipo', 'planta', 'layout'],
+                    
+                    'valorImovel': ['valor do imovel', 'valor', 'preco', 'valor tabela', 'preco de venda', 'valor total'],
+                    'valorAvaliacao': ['valor da avaliacao', 'avaliacao', 'valor avaliacao', 'laudo'],
+                    'bomPagador': ['bom pagador total', 'bom pagador', 'desconto bom pagador', 'desconto'],
+                    'bonus': ['bonus', 'bonificacao'],
+
+                    'areaInterna': ['area interna', 'area util', 'area m2', 'area', 'm2', 'metragem'],
+                    'areaQuintal': ['area do quintal', 'quintal', 'area externa', 'area descoberta'],
+                    'areaVaranda': ['area da varanda', 'varanda', 'sacada'],
+                    
+                    'vagasCarro': ['vagas carro', 'vaga carro', 'vagas garagem', 'vaga', 'vagas'],
+                    'vagasMoto': ['vagas moto', 'vaga moto'],
+                    
+                    'ladoNascente': ['lado nascente', 'nascente', 'posicao sol', 'sol'],
+                    'tipoAcabamento': ['tipo de acabamento', 'acabamento', 'padrao acabamento'],
+                    'pagadoria': ['pagadoria'],
+                    'versaoTabela': ['versao da tabela', 'tabela', 'versao'],
+                    'oportunidades': ['oportunidades abertas', 'oportunidades']
                 };
                 
+                // Cria o mapa de lookup rápido
+                const headerMapping = createFlexibleHeaderMap(standardFieldAliases);
+                
+                // Define quais chaves internas são de qual tipo
                 const camposTexto = ['regional', 'cidade', 'unidade', 'ladoNascente', 'tipologia', 'tipoAcabamento', 'status', 'pagadoria'];
-                const camposMonetarios = ['valorImovel', 'valorAvaliacao', 'bomPagador']; // CORREÇÃO: Campos monetários separados
+                const camposMonetarios = ['valorImovel', 'valorAvaliacao', 'bomPagador'];
                 const camposArea = ['areaInterna', 'areaQuintal', 'areaVaranda'];
                 
                 const newData = [];
@@ -1041,10 +1052,16 @@
                 for (const rawRow of rawDataList) {
                     const imovel = {};
                     
+                    // Itera sobre as colunas da linha da planilha (ex: "Valor do Imovel", "Cidade")
                     for (const headerKey in rawRow) {
+                        
+                        // Normaliza o cabeçalho da planilha (ex: "valor do imovel")
                         const normalizedHeader = normalizarTexto(headerKey);
+                        
+                        // Encontra a chave interna correspondente (ex: "valorImovel")
                         const internalKey = headerMapping[normalizedHeader]; 
                         
+                        // Se for um campo que o sistema reconhece:
                         if (internalKey) {
                             let value = rawRow[headerKey];
                             
@@ -1058,7 +1075,7 @@
                             } else if (camposArea.includes(internalKey)) {
                                 value = limparValorArea(value);
                             } else {
-                                // Para outros campos, apenas converta para string
+                                // Para outros campos (vagas, bonus, etc.), apenas converta para string
                                 value = String(value);
                             }
                             
@@ -1066,6 +1083,7 @@
                         }
                     }
 
+                    // Só adiciona se tiver conseguido mapear uma unidade
                     if (imovel.unidade) {
                         newData.push(imovel);
                     }
@@ -1079,7 +1097,7 @@
                     filterImoveis();
                     updateSummary();
                 } else {
-                    statusMessage.textContent = 'Erro: Nenhum dado válido encontrado no arquivo. Verifique o formato e os cabeçalhos.';
+                    statusMessage.textContent = 'Erro: Nenhum dado válido encontrado no arquivo. Verifique o formato e os cabeçalhos. (O sistema procura por uma coluna "unidade" ou similar).';
                 }
             }
 
@@ -1210,6 +1228,7 @@
                     return;
                 }
 
+                // Usa os nomes internos como base, mas formata para o CSV
                 const headers = [
                     'Regional', 'Cidade', 'Unidade', 'Lado Nascente', 'Tipologia',
                     'Área interna', 'Área do quintal', 'Área da varanda', 'Tipo de acabamento',
@@ -1221,6 +1240,7 @@
                 let csvContent = headers.join(';') + '\n';
                 
                 filteredImoveis.forEach(imovel => {
+                    // Mapeia dos dados internos para a linha do CSV
                     const row = [
                         imovel.regional || '',
                         imovel.cidade || '',
@@ -1274,7 +1294,7 @@
                     const valorImovel = parseFloat(imovel.valorImovel) || 0;
                     const areaInterna = parseFloat(imovel.areaInterna) || 0;
                     
-                    const matchesUnidade = normalizarTexto(imovel.unidade).includes(unidadeQuery);
+                    const matchesUnidade = imovel.unidade && normalizarTexto(imovel.unidade).includes(unidadeQuery);
                     const matchesCidade = !cidadeQuery || imovel.cidade === cidadeQuery;
                     const matchesTipologia = !tipologiaQuery || imovel.tipologia === tipologiaQuery;
                     const matchesStatus = !statusQuery || imovel.status === statusQuery;
