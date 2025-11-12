@@ -1407,7 +1407,7 @@
                 modalContainer.style.display = 'none';
             }
 
-            // --- NOVA FUNÇÃO downloadPdf COM DESIGN MELHORADO ---
+            // --- FUNÇÃO downloadPdf COM AS NOVAS MUDANÇAS ---
             function downloadPdf(imovel) {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
@@ -1452,23 +1452,7 @@
                 doc.setFont(undefined, 'normal');
                 doc.text('Sistema de Consulta de Imóveis - MRV', textX, 38);
                 
-                
-                // --- 3. STATUS MOVIDO PARA A ESQUERDA ---
-                const statusText = imovel.status || 'N/D';
-                const isDisponivel = imovel.status && normalizarTexto(imovel.status) === 'disponivel';
-                const statusColor = isDisponivel ? colorSecondary : colorDanger;
-                
-                const statusBadgeWidth = 50;
-                const statusBadgeHeight = 15;
-                const statusBadgeX = textX; // Alinhado com o texto do título
-                const statusBadgeY = 46; // Abaixo do subtítulo
-
-                doc.setFillColor(...statusColor);
-                doc.roundedRect(statusBadgeX, statusBadgeY, statusBadgeWidth, statusBadgeHeight, 3, 3, 'F');
-                doc.setTextColor(255, 255, 255);
-                doc.setFontSize(9);
-                doc.setFont(undefined, 'bold');
-                doc.text(statusText, statusBadgeX + (statusBadgeWidth / 2), statusBadgeY + (statusBadgeHeight / 2) + 3, { align: 'center' });
+                // --- Status foi REMOVIDO daqui ---
                 
                 
                 let yPosition = 75; // Posição Y inicial para os blocos
@@ -1476,13 +1460,37 @@
                 // --- 4. LAYOUT EM BLOCOS ---
 
                 // --- BLOCO 1: INFORMAÇÕES PRINCIPAIS (Verde Claro) ---
+                const blockHeaderHeight = 10;
                 doc.setFillColor(...colorTertiary);
-                doc.roundedRect(margin, yPosition, contentWidth, 10, 3, 3, 'F');
+                // Desenha a faixa verde-claro, mas deixa o canto superior direito reto (raio 0)
+                doc.roundedRect(margin, yPosition, contentWidth, blockHeaderHeight, 3, 0, 'F');
                 doc.setTextColor(255, 255, 255);
                 doc.setFont(undefined, 'bold');
                 doc.setFontSize(11);
                 doc.text('INFORMAÇÕES PRINCIPAIS', margin + 5, yPosition + 7);
-                yPosition += 10; // Altura do cabeçalho do bloco
+                
+                // --- MELHORIA: NOVO LOCAL DO STATUS (DENTRO DO BLOCO 1) ---
+                const statusText = imovel.status || 'N/D';
+                const isDisponivel = imovel.status && normalizarTexto(imovel.status) === 'disponivel';
+                // Usar a cor mais forte (verde ou vermelho) para o status
+                const statusColor = isDisponivel ? colorPrimary : colorDanger; 
+                
+                const statusBadgeWidth = 50;
+                const statusBadgeHeight = blockHeaderHeight; // Mesma altura da faixa
+                const statusBadgeX = (margin + contentWidth) - statusBadgeWidth; // Na outra extremidade
+                const statusBadgeY = yPosition; // Alinhado com o topo da faixa
+
+                // Desenha o "badge" de status com o canto superior direito arredondado
+                doc.setFillColor(...statusColor);
+                doc.roundedRect(statusBadgeX, statusBadgeY, statusBadgeWidth, statusBadgeHeight, 0, 3, 'F'); 
+                
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(9);
+                doc.setFont(undefined, 'bold');
+                doc.text(statusText, statusBadgeX + (statusBadgeWidth / 2), statusBadgeY + (statusBadgeHeight / 2) + 3, { align: 'center' });
+                // --- FIM DA MELHORIA ---
+
+                yPosition += blockHeaderHeight; // Altura do cabeçalho do bloco
                 
                 // Conteúdo do Bloco 1
                 doc.setTextColor(0, 0, 0);
@@ -1501,12 +1509,12 @@
                 
                 // --- BLOCO 2: VALORES (Azul) ---
                 doc.setFillColor(...colorSecondary);
-                doc.roundedRect(margin, yPosition, contentWidth, 10, 3, 3, 'F');
+                doc.roundedRect(margin, yPosition, contentWidth, blockHeaderHeight, 3, 3, 'F');
                 doc.setTextColor(255, 255, 255);
                 doc.setFont(undefined, 'bold');
                 doc.setFontSize(11);
                 doc.text('VALORES', margin + 5, yPosition + 7);
-                yPosition += 10;
+                yPosition += blockHeaderHeight;
                 
                 // Conteúdo do Bloco 2
                 doc.setTextColor(0, 0, 0);
@@ -1521,12 +1529,12 @@
 
                 // --- BLOCO 3: ÁREAS (Azul) ---
                 doc.setFillColor(...colorSecondary);
-                doc.roundedRect(margin, yPosition, contentWidth, 10, 3, 3, 'F');
+                doc.roundedRect(margin, yPosition, contentWidth, blockHeaderHeight, 3, 3, 'F');
                 doc.setTextColor(255, 255, 255);
                 doc.setFont(undefined, 'bold');
                 doc.setFontSize(11);
                 doc.text('ÁREAS (m²)', margin + 5, yPosition + 7);
-                yPosition += 10;
+                yPosition += blockHeaderHeight;
                 
                 // Conteúdo do Bloco 3
                 doc.setTextColor(0, 0, 0);
@@ -1541,12 +1549,12 @@
 
                 // --- BLOCO 4: CARACTERÍSTICAS (Azul) ---
                 doc.setFillColor(...colorSecondary);
-                doc.roundedRect(margin, yPosition, contentWidth, 10, 3, 3, 'F');
+                doc.roundedRect(margin, yPosition, contentWidth, blockHeaderHeight, 3, 3, 'F');
                 doc.setTextColor(255, 255, 255);
                 doc.setFont(undefined, 'bold');
                 doc.setFontSize(11);
                 doc.text('CARACTERÍSTICAS', margin + 5, yPosition + 7);
-                yPosition += 10;
+                yPosition += blockHeaderHeight;
                 
                 // Conteúdo do Bloco 4
                 doc.setTextColor(0, 0, 0);
@@ -1564,12 +1572,12 @@
 
                 // --- BLOCO 5: INFORMAÇÕES ADICIONAIS (Azul) ---
                 doc.setFillColor(...colorSecondary);
-                doc.roundedRect(margin, yPosition, contentWidth, 10, 3, 3, 'F');
+                doc.roundedRect(margin, yPosition, contentWidth, blockHeaderHeight, 3, 3, 'F');
                 doc.setTextColor(255, 255, 255);
                 doc.setFont(undefined, 'bold');
                 doc.setFontSize(11);
                 doc.text('INFORMAÇÕES ADICIONAIS', margin + 5, yPosition + 7);
-                yPosition += 10;
+                yPosition += blockHeaderHeight;
                 
                 // Conteúdo do Bloco 5
                 doc.setTextColor(0, 0, 0);
@@ -1583,12 +1591,11 @@
                 doc.text(`Oportunidades: ${imovel.oportunidades || 'N/D'}`, pageWidth / 2, yPosition);
                 
                 
-                // --- RODAPÉ ---
+                // --- RODAPÉ (LINHA REMOVIDA) ---
                 const data = new Date().toLocaleDateString('pt-BR');
                 const hora = new Date().toLocaleTimeString('pt-BR');
                 
-                doc.setDrawColor(200, 200, 200);
-                doc.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20);
+                // doc.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20); // LINHA REMOVIDA
                 
                 doc.setFontSize(9);
                 doc.setTextColor(100, 100, 100);
