@@ -1104,48 +1104,23 @@
 
             // --- FIM DA LÓGICA DE IMPORTAÇÃO ---
 
-            function updateFilterOptions() {
-                searchCidadeSelect.innerHTML = '<option value="">Todas as Cidades</option>';
-                searchTipologiaSelect.innerHTML = '<option value="">Todas as Tipologias</option>';
-                searchStatusSelect.innerHTML = '<option value="">Todos os Status</option>';
-                
-                const cidades = [...new Set(databaseImoveis.map(imovel => imovel.cidade))].sort();
-                const tipologias = [...new Set(databaseImoveis.map(imovel => imovel.tipologia))].sort();
-                const status = [...new Set(databaseImoveis.map(imovel => imovel.status))].sort();
-                
-                cidades.forEach(cidade => {
-                    const option = document.createElement('option');
-                    option.value = cidade;
-                    option.textContent = cidade;
-                    searchCidadeSelect.appendChild(option);
-                });
-                
-                tipologias.forEach(tipologia => {
-                    const option = document.createElement('option');
-                    option.value = tipologia;
-                    option.textContent = tipologia;
-                    searchTipologiaSelect.appendChild(option);
-                });
-                
-                status.forEach(estado => {
-                    const option = document.createElement('option');
-                    option.value = estado;
-                    option.textContent = estado;
-                    searchStatusSelect.appendChild(option);
-                });
-            }
-
+            // --- MELHORIA: FUNÇÃO updateSummary ATUALIZADA ---
             function updateSummary() {
                 const totalImoveis = databaseImoveis.length;
                 const imoveisDisponiveis = databaseImoveis.filter(imovel => 
                     imovel.status && normalizarTexto(imovel.status) === 'disponivel'
                 ).length;
                 
+                // Calcula o valor total primeiro
+                const valorTotal = databaseImoveis.reduce((sum, imovel) => 
+                        sum + (parseFloat(imovel.valorImovel) || 0), 0);
+                
+                // Usa o valor total para calcular a média
                 const valorMedio = totalImoveis > 0 ? 
-                    databaseImoveis.reduce((sum, imovel) => 
-                        sum + (parseFloat(imovel.valorImovel) || 0), 0) / totalImoveis
+                    valorTotal / totalImoveis
                     : 0;
                 
+                // Adiciona o novo card de "Valor Total"
                 summaryContainer.innerHTML = `
                     <div class="summary-item">
                         <strong>Total de Imóveis</strong>
@@ -1156,7 +1131,11 @@
                         <div class="summary-value">${imoveisDisponiveis}</div>
                     </div>
                     <div class="summary-item">
-                        <strong>Valor Médio</strong>
+                        <strong>Valor Total (R$)</strong>
+                        <div class="summary-value">${formatarMoeda(valorTotal)}</div>
+                    </div>
+                    <div class="summary-item">
+                        <strong>Valor Médio (R$)</strong>
                         <div class="summary-value">${formatarMoeda(valorMedio)}</div>
                     </div>
                 `;
