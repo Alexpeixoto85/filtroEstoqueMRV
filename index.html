@@ -9,6 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     
     <style>
         /* --- ESTILOS GERAIS COM PALETA MRV (VERDE) --- */
@@ -86,7 +87,7 @@
             color: #666;
         }
 
-        /* --- NOVO: BARRA DE BOTÕES DE TOGGLE --- */
+        /* --- BARRA DE BOTÕES DE TOGGLE --- */
         .button-bar {
             display: flex;
             gap: 10px;
@@ -104,11 +105,10 @@
             cursor: pointer;
             font-weight: bold;
             transition: var(--transition);
-            /* margin-bottom removido, agora está no .button-bar */
         }
 
         .config-toggle:hover {
-            background-color: #1976D2; /* Tom mais escuro do azul */
+            background-color: #1976D2; 
         }
 
         .config-section {
@@ -178,7 +178,7 @@
             color: white; 
         }
         #importButton:hover { 
-            background-color: #388E3C; /* Tom mais escuro do verde */
+            background-color: #388E3C; 
         }
 
         #clearButton { 
@@ -186,7 +186,7 @@
             color: white; 
         }
         #clearButton:hover { 
-            background-color: #D32F2F; /* Tom mais escuro do vermelho */
+            background-color: #D32F2F; 
         }
 
         #statusMessage {
@@ -221,13 +221,13 @@
         
         .summary-item {
             flex: 1;
-            min-width: 150px; /* Garante que 4 itens fiquem bem */
+            min-width: 150px; 
             padding: 15px;
             background-color: var(--light-color);
             border-radius: var(--border-radius);
             text-align: center;
             box-shadow: var(--box-shadow);
-            border-left: 4px solid var(--primary-color); /* Verde principal na borda */
+            border-left: 4px solid var(--primary-color); 
         }
         
         .summary-item strong {
@@ -240,18 +240,19 @@
         .summary-value {
             font-size: 20px;
             font-weight: bold;
-            color: var(--primary-color); /* Verde principal no valor */
+            color: var(--primary-color); 
         }
 
-        /* --- SEÇÃO DO GRÁFICO (MODIFICADO) --- */
+        /* --- SEÇÃO DO GRÁFICO --- */
         .chart-container {
             position: relative;
-            height: 300px; /* Altura fixa para o gráfico */
-            display: none; /* NOVO: Oculto por padrão */
+            height: 350px; /* Aumentei a altura para o rótulo caber */
+            display: none; 
+            padding-top: 20px; /* Espaço para o rótulo no topo */
         }
 
         .chart-container.active {
-            display: block; /* NOVO: Mostrar quando ativo */
+            display: block; 
         }
         
         .chart-container h3 {
@@ -275,7 +276,7 @@
         .search-toggle {
             display: none;
             width: 100%;
-            background-color: var(--primary-color); /* Verde principal */
+            background-color: var(--primary-color); 
             color: white;
             margin-bottom: 10px;
             padding: 12px;
@@ -327,7 +328,7 @@
         }
 
         .property-card-header { 
-            background-color: var(--secondary-color); /* Azul */
+            background-color: var(--secondary-color); 
             color: white; 
             padding: 12px 15px; 
             display: flex;
@@ -343,7 +344,7 @@
             flex: 1;
         }
         .property-card-status {
-            background-color: var(--primary-color); /* Verde principal */
+            background-color: var(--primary-color); 
             color: white;
             padding: 4px 8px;
             border-radius: 4px;
@@ -384,7 +385,7 @@
         }
         
         .view-details-btn {
-            background-color: var(--primary-color); /* Verde principal */
+            background-color: var(--primary-color); 
             color: white;
             margin-top: 15px;
             width: 100%;
@@ -437,7 +438,7 @@
         }
         
         #downloadPdfButton {
-            background-color: var(--primary-color); /* Verde principal */
+            background-color: var(--primary-color); 
             color: white;
             margin-top: 20px;
             width: 100%;
@@ -456,7 +457,7 @@
             overflow: hidden;
         }
         .ficha-header {
-            background-color: var(--secondary-color); /* Azul */
+            background-color: var(--secondary-color); 
             color: white;
             padding: 20px;
             display: flex;
@@ -481,7 +482,7 @@
             font-size: 16px; 
         }
         .ficha-status {
-            background-color: var(--primary-color); /* Verde principal */
+            background-color: var(--primary-color); 
             color: white;
             padding: 8px 15px;
             border-radius: 4px;
@@ -652,7 +653,7 @@
             }
             
             .chart-container {
-                height: 250px; /* Altura menor para celulares */
+                height: 300px; /* Ajustado para dar espaço */
             }
             
             .button-bar {
@@ -682,7 +683,8 @@
 
         <div class="button-bar">
             <button class="config-toggle" id="configToggle">Configurações do Sistema</button>
-            <button class="config-toggle" id="chartToggle">Mostrar Gráfico</button> </div>
+            <button class="config-toggle" id="chartToggle">Mostrar Gráfico</button> 
+        </div>
 
         <div class="config-section" id="configSection">
             <div class="logo-section">
@@ -797,7 +799,7 @@
             const fichaContent = document.getElementById('fichaContent');
             const downloadPdfButton = document.getElementById('downloadPdfButton');
 
-            // NOVO: Elementos do Gráfico
+            // Elementos do Gráfico
             const chartToggle = document.getElementById('chartToggle');
             const chartContainer = document.getElementById('chartContainer');
 
@@ -1225,7 +1227,7 @@
                 `;
             }
 
-            // --- updateChart ---
+            // --- MODIFICADO: updateChart ---
             function updateChart() {
                 const ctx = document.getElementById('empreendimentoChart').getContext('2d');
 
@@ -1246,6 +1248,10 @@
                 if (myChart) {
                     myChart.destroy();
                 }
+
+                // Registra o plugin globalmente (necessário para Chart.js 3+)
+                // Embora o script o faça, ser explícito não é ruim
+                Chart.register(ChartDataLabels);
 
                 myChart = new Chart(ctx, {
                     type: 'bar',
@@ -1283,9 +1289,19 @@
                                 }
                             }
                         },
-                        plugins: {
+                        // MODIFICADO AQUI
+                        plugins: { 
                             legend: {
                                 display: false 
+                            },
+                            // NOVO: Configuração do plugin datalabels
+                            datalabels: {
+                                anchor: 'end', // Posição no final da barra (topo)
+                                align: 'top',  // Alinhar o texto no topo
+                                color: '#333', // Cor do texto
+                                font: {
+                                    weight: 'bold'
+                                }
                             }
                         }
                     }
@@ -1744,7 +1760,7 @@
                     'Ocultar Filtros' : 'Mostrar Filtros';
             });
 
-            // NOVO: Toggle para Gráfico
+            // Toggle para Gráfico
             chartToggle.addEventListener('click', () => {
                 chartContainer.classList.toggle('active');
                 chartToggle.textContent = chartContainer.classList.contains('active') ? 
