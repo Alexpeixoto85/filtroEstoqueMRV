@@ -1439,6 +1439,29 @@
                 doc.setFont(undefined, 'normal');
                 doc.text('Sistema de Consulta de Imóveis - MRV', logoData ? margin + 50 : margin, 35);
                 
+                // --- MELHORIA: NOVO LOCAL DO STATUS ---
+                // Coloca o status no canto superior direito do cabeçalho verde
+                
+                const statusText = imovel.status || 'N/D';
+                // Define a cor: Azul para disponível (harmonia), Vermelho para outros
+                const statusColor = imovel.status && normalizarTexto(imovel.status) === 'disponivel' ? 
+                    [33, 150, 243] : [244, 67, 54]; // Azul (#2196F3) ou Vermelho (#F44336)
+                
+                const statusBadgeWidth = 50;
+                const statusBadgeHeight = 18;
+                const statusBadgeX = pageWidth - margin - statusBadgeWidth;
+                const statusBadgeY = 25; // Alinhado com o título 'FICHA DO IMÓVEL'
+
+                doc.setFillColor(...statusColor);
+                doc.roundedRect(statusBadgeX, statusBadgeY, statusBadgeWidth, statusBadgeHeight, 3, 3, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(9);
+                doc.setFont(undefined, 'bold');
+                doc.text(statusText, statusBadgeX + (statusBadgeWidth / 2), statusBadgeY + (statusBadgeHeight / 2) + 3, { align: 'center' });
+                
+                // --- FIM DA MELHORIA ---
+
+
                 // Informações principais em destaque
                 doc.setTextColor(0, 0, 0);
                 doc.setFillColor(245, 245, 245);
@@ -1446,29 +1469,24 @@
                 
                 doc.setFontSize(18);
                 doc.setFont(undefined, 'bold');
-                doc.text(imovel.unidade, margin + 10, 90);
+                // Adicionado maxWidth para garantir que o texto não saia do card cinza
+                doc.text(imovel.unidade, margin + 10, 90, { maxWidth: contentWidth - 20 }); 
                 
                 doc.setFontSize(12);
                 doc.setFont(undefined, 'normal');
-                doc.text(`${imovel.tipologia || 'N/D'} - ${imovel.cidade || 'N/D'}`, margin + 10, 100);
+                // Ajusta o Y do subtítulo caso o título tenha quebrado a linha (só o jsPDF sabe)
+                // Vamos simplificar e apenas colocá-lo abaixo
+                const splitLines = doc.splitTextToSize(imovel.unidade, contentWidth - 20);
+                const titleHeight = (splitLines.length * 7); // Heurística para altura do título
+                const subtitleY = 90 + titleHeight - 2; // Posição do subtítulo
                 
-                // Status com badge colorido (TAMANHO AJUSTADO)
-                const statusColor = imovel.status && normalizarTexto(imovel.status) === 'disponivel' ? 
-                    [76, 175, 80] : [244, 67, 54]; // Verde para disponível, Vermelho para indisponível
+                // Reposiciona o subtítulo para garantir que não sobreponha
+                doc.text(`${imovel.tipologia || 'N/D'} - ${imovel.cidade || 'N/D'}`, margin + 10, Math.max(100, subtitleY));
                 
-                const statusBadgeWidth = 45; // Largura do badge reduzida
-                const statusBadgeHeight = 15; // Altura do badge reduzida
-                const statusBadgeX = pageWidth - margin - statusBadgeWidth;
-                const statusBadgeY = 82; // Ajustado para ficar centralizado verticalmente com o cabeçalho do imóvel
-                
-                doc.setFillColor(...statusColor);
-                doc.roundedRect(statusBadgeX, statusBadgeY, statusBadgeWidth, statusBadgeHeight, 3, 3, 'F');
-                doc.setTextColor(255, 255, 255);
-                doc.setFontSize(9); // Fonte menor para caber no badge
-                doc.text(imovel.status || 'N/D', statusBadgeX + (statusBadgeWidth / 2), statusBadgeY + (statusBadgeHeight / 2) + 2, { align: 'center' }); // Ajuste de posição
+                // Ajusta a posição Y inicial do conteúdo
+                let yPosition = Math.max(120, subtitleY + 20);
                 
                 // Seções organizadas
-                let yPosition = 120;
                 
                 // Seção 1: Valores
                 doc.setTextColor(0, 0, 0);
