@@ -235,7 +235,7 @@
             color: var(--primary-color); /* Verde principal no valor */
         }
 
-        /* --- NOVO: SEÇÃO DO GRÁFICO --- */
+        /* --- SEÇÃO DO GRÁFICO --- */
         .chart-container {
             position: relative;
             height: 300px; /* Altura fixa para o gráfico */
@@ -696,8 +696,8 @@
             </div>
         
         <div class="chart-container">
-            <h3>Imóveis por Regional</h3>
-            <p>Quantidade de unidades agrupadas por regional ou cidade.</p>
+            <h3>Imóveis por Empreendimento</h3>
+            <p>Contagem de unidades agrupadas pelo nome do empreendimento (extraído da Unidade).</p>
             <canvas id="empreendimentoChart"></canvas>
         </div>
 
@@ -854,6 +854,50 @@
                 
                 return `${numeroFormatado} m²`;
             }
+            
+            // --- NOVA FUNÇÃO ---
+            /**
+             * Extrai o nome do empreendimento da string da unidade.
+             * Ex: "MAR DE CAPRI - APTO 101" -> "MAR DE CAPRI"
+             * Ex: "MAR DE CAPRI 101" -> "MAR DE CAPRI"
+             * Ex: "MAR DE CAPRI" -> "MAR DE CAPRI"
+             */
+            function getEmpreendimentoNome(unidadeString) {
+                if (!unidadeString) return 'N/D';
+                let nome = String(unidadeString).trim().toUpperCase(); // Padroniza para ALL CAPS
+                
+                // Lista de separadores, em ordem de prioridade
+                const separadores = [
+                    ' - ', ' / ', ' BL ', ' APTO ', ' AP ', ' T-', 'TORRE', 'CASA'
+                ];
+                
+                for (const sep of separadores) {
+                    if (nome.includes(sep)) {
+                        const index = nome.indexOf(sep);
+                        if (index > 0) { // Só faz o split se o separador NÃO estiver no início
+                            return nome.substring(0, index).trim();
+                        }
+                    }
+                }
+
+                // Se não achou separador de texto, tenta por número
+                // Ex: "MAR DE CAPRI 101" -> "MAR DE CAPRI"
+                // Regex: (qualquer coisa) (espaço) (dígito)
+                const match = nome.match(/^(.*?)\s+(\d)/);
+                if (match && match[1] && isNaN(match[1])) { // Garante que o nome não é só um número
+                    return match[1].trim();
+                }
+                
+                // Fallback: Se não achou separador, mas não começa com um
+                // descritor de unidade, assume que a string inteira é o nome.
+                if (!nome.match(/^(AP|BL|T-|CASA|TORRE|\d)/)) {
+                    return nome; // Ex: "MAR DE CAPRI"
+                }
+
+                // Se chegou aqui, é algo como "APTO 101" ou "101", que não tem nome
+                return 'Sem Empreendimento'; 
+            }
+
 
             // --- FUNÇÕES DE CONFIGURAÇÃO ---
 
@@ -1136,14 +1180,13 @@
                 });
             }
 
-            // --- MODIFICADO: updateSummary ---
+            // --- updateSummary ---
             function updateSummary() {
                 const totalImoveis = databaseImoveis.length;
                 const imoveisDisponiveis = databaseImoveis.filter(imovel => 
                     imovel.status && normalizarTexto(imovel.status) === 'disponivel'
                 ).length;
                 
-                // NOVO CÁLCULO: Valor Total
                 const valorTotal = databaseImoveis.reduce((sum, imovel) => 
                         sum + (parseFloat(imovel.valorImovel) || 0), 0);
                 
@@ -1151,7 +1194,6 @@
                     valorTotal / totalImoveis
                     : 0;
                 
-                // ATUALIZADO: Adicionado card de Valor Total
                 summaryContainer.innerHTML = `
                     <div class="summary-item">
                         <strong>Total de Imóveis</strong>
@@ -1172,26 +1214,27 @@
                 `;
             }
 
-            // --- NOVO: updateChart ---
+            // --- MODIFICADO: updateChart ---
             function updateChart() {
                 const ctx = document.getElementById('empreendimentoChart').getContext('2d');
 
-                // 1. Agrupar dados por 'regional' ou 'cidade'
-                const countsByRegional = databaseImoveis.reduce((acc, imovel) => {
-                    // Tenta usar 'regional', se não tiver, usa 'cidade'
-                    let regionalKey = imovel.regional || imovel.cidade || 'N/D';
-                    
-                    if (regionalKey === 'N/D' || regionalKey === '') {
-                        regionalKey = 'Sem Grupo';
+                // 1. Agrupar dados usando a nova função
+                const countsByEmpreendimento = databaseImoveis.reduce((acc, imovel) => {
+                    // USA A NOVA FUNÇÃO AQUI
+                    let empreendimentoNome = getEmpreendimentoNome(imovel.unidade); // A função já retorna 'N/D' ou o nome
+
+                    // Agrupa qualquer coisa não identificada
+                    if (empreendimentoNome === 'N/D' || empreendimentoNome === 'Sem Empreendimento' || empreendimentoNome === '') {
+                        empreendimentoNome = 'Outros / Não Identificado';
                     }
 
-                    acc[regionalKey] = (acc[regionalKey] || 0) + 1;
+                    acc[empreendimentoNome] = (acc[empreendimentoNome] || 0) + 1;
                     return acc;
                 }, {});
 
                 // 2. Preparar dados para o gráfico
-                const labels = Object.keys(countsByRegional).sort();
-                const data = labels.map(label => countsByRegional[label]);
+                const labels = Object.keys(countsByEmpreendimento).sort();
+                const data = labels.map(label => countsByEmpreendimento[label]);
 
                 // 3. Destruir gráfico antigo se existir
                 if (myChart) {
@@ -1230,7 +1273,6 @@
                             y: {
                                 beginAtZero: true,
                                 ticks: {
-                                    // Garante que os ticks sejam números inteiros
                                     stepSize: 1, 
                                     callback: function(value) { if (value % 1 === 0) { return value; } }
                                 }
@@ -1674,7 +1716,7 @@
             searchUnidadeInput.addEventListener('input', filterImoveis);
             searchCidadeSelect.addEventListener('change', filterImoveis);
             searchTipologiaSelect.addEventListener('change', filterImoveis);
-            searchStatusSelect.addEventListener('change', filterImoveis);
+            searchStatusSelect.addEventListener('change', filterImomeis);
             searchValorMinInput.addEventListener('input', filterImoveis);
             searchValorMaxInput.addEventListener('input', filterImoveis);
             searchAreaMinInput.addEventListener('input', filterImoveis);
