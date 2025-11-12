@@ -1407,50 +1407,61 @@
                 modalContainer.style.display = 'none';
             }
 
+            // --- NOVA FUNÇÃO downloadPdf COM DESIGN MELHORADO ---
             function downloadPdf(imovel) {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
                 
                 const pageWidth = doc.internal.pageSize.getWidth();
-                const margin = 20;
+                const pageHeight = doc.internal.pageSize.getHeight();
+                const margin = 15; // Margem um pouco menor para mais espaço
                 const contentWidth = pageWidth - 2 * margin;
                 
-                // Cabeçalho moderno com gradiente na cor VERDE (MRV)
-                doc.setFillColor(76, 175, 80); // Cor principal verde MRV
-                doc.rect(0, 0, pageWidth, 60, 'F');
+                const colorPrimary = [76, 175, 80]; // Verde Principal (#4CAF50)
+                const colorSecondary = [33, 150, 243]; // Azul Secundário (#2196F3)
+                const colorTertiary = [139, 195, 74]; // Verde Claro (#8BC34A)
+                const colorDanger = [244, 67, 54]; // Vermelho (#F44336)
+                
+                // --- 1. BORDA ELEGANTE ---
+                doc.setDrawColor(200, 200, 200); // Cinza claro
+                doc.setLineWidth(0.5);
+                doc.rect(5, 5, pageWidth - 10, pageHeight - 10); // Borda fina na página
+                
+                // --- 2. CABEÇALHO VERDE ---
+                doc.setFillColor(...colorPrimary);
+                doc.rect(margin - 1, 10, contentWidth + 2, 50, 'F'); // Cabeçalho principal
                 
                 // Logo
                 const logoData = localStorage.getItem(LOGO_STORAGE_KEY);
                 if (logoData) {
                     try {
-                        doc.addImage(logoData, 'PNG', margin, 15, 40, 30);
+                        doc.addImage(logoData, 'PNG', margin + 5, 15, 40, 30);
                     } catch (e) {
                         console.error('Erro ao adicionar logo ao PDF:', e);
                     }
                 }
                 
                 // Título
+                const textX = logoData ? margin + 50 : margin + 5;
                 doc.setTextColor(255, 255, 255);
-                doc.setFontSize(22);
+                doc.setFontSize(20);
                 doc.setFont(undefined, 'bold');
-                doc.text('FICHA DO IMÓVEL', logoData ? margin + 50 : margin, 25);
+                doc.text('FICHA DO IMÓVEL', textX, 28);
                 
-                doc.setFontSize(14);
+                doc.setFontSize(12);
                 doc.setFont(undefined, 'normal');
-                doc.text('Sistema de Consulta de Imóveis - MRV', logoData ? margin + 50 : margin, 35);
+                doc.text('Sistema de Consulta de Imóveis - MRV', textX, 38);
                 
-                // --- MELHORIA: NOVO LOCAL DO STATUS ---
-                // Coloca o status no canto superior direito do cabeçalho verde
                 
+                // --- 3. STATUS MOVIDO PARA A ESQUERDA ---
                 const statusText = imovel.status || 'N/D';
-                // Define a cor: Azul para disponível (harmonia), Vermelho para outros
-                const statusColor = imovel.status && normalizarTexto(imovel.status) === 'disponivel' ? 
-                    [33, 150, 243] : [244, 67, 54]; // Azul (#2196F3) ou Vermelho (#F44336)
+                const isDisponivel = imovel.status && normalizarTexto(imovel.status) === 'disponivel';
+                const statusColor = isDisponivel ? colorSecondary : colorDanger;
                 
                 const statusBadgeWidth = 50;
-                const statusBadgeHeight = 18;
-                const statusBadgeX = pageWidth - margin - statusBadgeWidth;
-                const statusBadgeY = 25; // Alinhado com o título 'FICHA DO IMÓVEL'
+                const statusBadgeHeight = 15;
+                const statusBadgeX = textX; // Alinhado com o texto do título
+                const statusBadgeY = 46; // Abaixo do subtítulo
 
                 doc.setFillColor(...statusColor);
                 doc.roundedRect(statusBadgeX, statusBadgeY, statusBadgeWidth, statusBadgeHeight, 3, 3, 'F');
@@ -1459,118 +1470,134 @@
                 doc.setFont(undefined, 'bold');
                 doc.text(statusText, statusBadgeX + (statusBadgeWidth / 2), statusBadgeY + (statusBadgeHeight / 2) + 3, { align: 'center' });
                 
-                // --- FIM DA MELHORIA ---
-
-
-                // Informações principais em destaque
-                doc.setTextColor(0, 0, 0);
-                doc.setFillColor(245, 245, 245);
-                doc.roundedRect(margin, 75, contentWidth, 30, 3, 3, 'F');
                 
-                doc.setFontSize(18);
+                let yPosition = 75; // Posição Y inicial para os blocos
+
+                // --- 4. LAYOUT EM BLOCOS ---
+
+                // --- BLOCO 1: INFORMAÇÕES PRINCIPAIS (Verde Claro) ---
+                doc.setFillColor(...colorTertiary);
+                doc.roundedRect(margin, yPosition, contentWidth, 10, 3, 3, 'F');
+                doc.setTextColor(255, 255, 255);
                 doc.setFont(undefined, 'bold');
-                // Adicionado maxWidth para garantir que o texto não saia do card cinza
-                doc.text(imovel.unidade, margin + 10, 90, { maxWidth: contentWidth - 20 }); 
+                doc.setFontSize(11);
+                doc.text('INFORMAÇÕES PRINCIPAIS', margin + 5, yPosition + 7);
+                yPosition += 10; // Altura do cabeçalho do bloco
+                
+                // Conteúdo do Bloco 1
+                doc.setTextColor(0, 0, 0);
+                doc.setFontSize(16);
+                doc.setFont(undefined, 'bold');
+                yPosition += 12; // Espaço
+                const splitLines = doc.splitTextToSize(imovel.unidade, contentWidth - 10);
+                doc.text(splitLines, margin + 5, yPosition);
+                yPosition += (splitLines.length * 6); // Ajusta o Y baseado em quantas linhas o título usou
                 
                 doc.setFontSize(12);
                 doc.setFont(undefined, 'normal');
-                // Ajusta o Y do subtítulo caso o título tenha quebrado a linha (só o jsPDF sabe)
-                // Vamos simplificar e apenas colocá-lo abaixo
-                const splitLines = doc.splitTextToSize(imovel.unidade, contentWidth - 20);
-                const titleHeight = (splitLines.length * 7); // Heurística para altura do título
-                const subtitleY = 90 + titleHeight - 2; // Posição do subtítulo
+                doc.text(`${imovel.tipologia || 'N/D'} - ${imovel.cidade || 'N/D'}`, margin + 5, yPosition);
+                yPosition += 15; // Espaço antes do próximo bloco
+
                 
-                // Reposiciona o subtítulo para garantir que não sobreponha
-                doc.text(`${imovel.tipologia || 'N/D'} - ${imovel.cidade || 'N/D'}`, margin + 10, Math.max(100, subtitleY));
+                // --- BLOCO 2: VALORES (Azul) ---
+                doc.setFillColor(...colorSecondary);
+                doc.roundedRect(margin, yPosition, contentWidth, 10, 3, 3, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFont(undefined, 'bold');
+                doc.setFontSize(11);
+                doc.text('VALORES', margin + 5, yPosition + 7);
+                yPosition += 10;
                 
-                // Ajusta a posição Y inicial do conteúdo
-                let yPosition = Math.max(120, subtitleY + 20);
-                
-                // Seções organizadas
-                
-                // Seção 1: Valores
+                // Conteúdo do Bloco 2
                 doc.setTextColor(0, 0, 0);
-                doc.setFontSize(14);
-                doc.setFont(undefined, 'bold');
-                doc.text('VALORES', margin, yPosition);
-                doc.setDrawColor(200, 200, 200);
-                doc.line(margin, yPosition + 2, margin + 40, yPosition + 2);
-                
-                yPosition += 10;
-                
-                doc.setFontSize(10);
                 doc.setFont(undefined, 'normal');
-                doc.text(`Valor do Imóvel: ${formatarMoeda(imovel.valorImovel)}`, margin, yPosition);
-                doc.text(`Valor da Avaliação: ${formatarMoeda(imovel.valorAvaliacao)}`, pageWidth/2, yPosition);
+                doc.setFontSize(10);
+                yPosition += 10;
+                doc.text(`Valor do Imóvel: ${formatarMoeda(imovel.valorImovel)}`, margin + 5, yPosition);
+                doc.text(`Valor da Avaliação: ${formatarMoeda(imovel.valorAvaliacao)}`, pageWidth / 2, yPosition);
                 yPosition += 7;
-                doc.text(`Bom Pagador: ${formatarMoeda(imovel.bomPagador)}`, margin, yPosition);
+                doc.text(`Bom Pagador: ${formatarMoeda(imovel.bomPagador)}`, margin + 5, yPosition);
                 yPosition += 15;
-                
-                // Seção 2: Áreas
-                doc.setFontSize(14);
+
+                // --- BLOCO 3: ÁREAS (Azul) ---
+                doc.setFillColor(...colorSecondary);
+                doc.roundedRect(margin, yPosition, contentWidth, 10, 3, 3, 'F');
+                doc.setTextColor(255, 255, 255);
                 doc.setFont(undefined, 'bold');
-                doc.text('ÁREAS', margin, yPosition);
-                doc.line(margin, yPosition + 2, margin + 25, yPosition + 2);
-                
+                doc.setFontSize(11);
+                doc.text('ÁREAS (m²)', margin + 5, yPosition + 7);
                 yPosition += 10;
                 
-                doc.setFontSize(10);
+                // Conteúdo do Bloco 3
+                doc.setTextColor(0, 0, 0);
                 doc.setFont(undefined, 'normal');
-                doc.text(`Área Interna: ${formatarArea(imovel.areaInterna)}`, margin, yPosition);
-                doc.text(`Área do Quintal: ${formatarArea(imovel.areaQuintal)}`, pageWidth/2, yPosition);
+                doc.setFontSize(10);
+                yPosition += 10;
+                doc.text(`Área Interna: ${formatarArea(imovel.areaInterna)}`, margin + 5, yPosition);
+                doc.text(`Área do Quintal: ${formatarArea(imovel.areaQuintal)}`, pageWidth / 2, yPosition);
                 yPosition += 7;
-                doc.text(`Área da Varanda: ${formatarArea(imovel.areaVaranda)}`, margin, yPosition);
+                doc.text(`Área da Varanda: ${formatarArea(imovel.areaVaranda)}`, margin + 5, yPosition);
                 yPosition += 15;
-                
-                // Seção 3: Características
-                doc.setFontSize(14);
+
+                // --- BLOCO 4: CARACTERÍSTICAS (Azul) ---
+                doc.setFillColor(...colorSecondary);
+                doc.roundedRect(margin, yPosition, contentWidth, 10, 3, 3, 'F');
+                doc.setTextColor(255, 255, 255);
                 doc.setFont(undefined, 'bold');
-                doc.text('CARACTERÍSTICAS', margin, yPosition);
-                doc.line(margin, yPosition + 2, margin + 70, yPosition + 2);
-                
+                doc.setFontSize(11);
+                doc.text('CARACTERÍSTICAS', margin + 5, yPosition + 7);
                 yPosition += 10;
                 
-                doc.setFontSize(10);
+                // Conteúdo do Bloco 4
+                doc.setTextColor(0, 0, 0);
                 doc.setFont(undefined, 'normal');
-                doc.text(`Regional: ${imovel.regional || 'N/D'}`, margin, yPosition);
-                doc.text(`Lado Nascente: ${imovel.ladoNascente || 'N/D'}`, pageWidth/2, yPosition);
+                doc.setFontSize(10);
+                yPosition += 10;
+                doc.text(`Regional: ${imovel.regional || 'N/D'}`, margin + 5, yPosition);
+                doc.text(`Lado Nascente: ${imovel.ladoNascente || 'N/D'}`, pageWidth / 2, yPosition);
                 yPosition += 7;
-                doc.text(`Acabamento: ${imovel.tipoAcabamento || 'N/D'}`, margin, yPosition);
-                doc.text(`Vagas Carro: ${imovel.vagasCarro || 'N/D'}`, pageWidth/2, yPosition);
+                doc.text(`Acabamento: ${imovel.tipoAcabamento || 'N/D'}`, margin + 5, yPosition);
+                doc.text(`Vagas Carro: ${imovel.vagasCarro || 'N/D'}`, pageWidth / 2, yPosition);
                 yPosition += 7;
-                doc.text(`Vagas Moto: ${imovel.vagasMoto || 'N/D'}`, margin, yPosition);
+                doc.text(`Vagas Moto: ${imovel.vagasMoto || 'N/D'}`, margin + 5, yPosition);
                 yPosition += 15;
-                
-                // Seção 4: Informações Adicionais
-                doc.setFontSize(14);
+
+                // --- BLOCO 5: INFORMAÇÕES ADICIONAIS (Azul) ---
+                doc.setFillColor(...colorSecondary);
+                doc.roundedRect(margin, yPosition, contentWidth, 10, 3, 3, 'F');
+                doc.setTextColor(255, 255, 255);
                 doc.setFont(undefined, 'bold');
-                doc.text('INFORMAÇÕES ADICIONAIS', margin, yPosition);
-                doc.line(margin, yPosition + 2, margin + 95, yPosition + 2);
-                
+                doc.setFontSize(11);
+                doc.text('INFORMAÇÕES ADICIONAIS', margin + 5, yPosition + 7);
                 yPosition += 10;
                 
-                doc.setFontSize(10);
+                // Conteúdo do Bloco 5
+                doc.setTextColor(0, 0, 0);
                 doc.setFont(undefined, 'normal');
-                doc.text(`Pagadoria: ${imovel.pagadoria || 'N/D'}`, margin, yPosition);
-                doc.text(`Bônus: ${imovel.bonus || 'N/D'}`, pageWidth/2, yPosition);
+                doc.setFontSize(10);
+                yPosition += 10;
+                doc.text(`Pagadoria: ${imovel.pagadoria || 'N/D'}`, margin + 5, yPosition);
+                doc.text(`Bônus: ${imovel.bonus || 'N/D'}`, pageWidth / 2, yPosition);
                 yPosition += 7;
-                doc.text(`Versão da Tabela: ${imovel.versaoTabela || 'N/D'}`, margin, yPosition);
-                doc.text(`Oportunidades: ${imovel.oportunidades || 'N/D'}`, pageWidth/2, yPosition);
+                doc.text(`Versão da Tabela: ${imovel.versaoTabela || 'N/D'}`, margin + 5, yPosition);
+                doc.text(`Oportunidades: ${imovel.oportunidades || 'N/D'}`, pageWidth / 2, yPosition);
                 
-                // Rodapé
+                
+                // --- RODAPÉ ---
                 const data = new Date().toLocaleDateString('pt-BR');
                 const hora = new Date().toLocaleTimeString('pt-BR');
                 
                 doc.setDrawColor(200, 200, 200);
-                doc.line(margin, doc.internal.pageSize.getHeight() - 20, pageWidth - margin, doc.internal.pageSize.getHeight() - 20);
+                doc.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20);
                 
                 doc.setFontSize(9);
                 doc.setTextColor(100, 100, 100);
-                doc.text(`Gerado em: ${data} às ${hora}`, margin, doc.internal.pageSize.getHeight() - 10);
-                doc.text('Sistema de Consulta de Imóveis - MRV', pageWidth - margin, doc.internal.pageSize.getHeight() - 10, { align: 'right' });
+                doc.text(`Gerado em: ${data} às ${hora}`, margin, pageHeight - 10);
+                doc.text('Sistema de Consulta de Imóveis - MRV', pageWidth - margin, pageHeight - 10, { align: 'right' });
                 
                 doc.save(`ficha_imovel_${imovel.unidade}.pdf`);
             }
+
 
             // --- EVENT LISTENERS ---
 
