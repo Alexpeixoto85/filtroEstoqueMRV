@@ -670,8 +670,7 @@
         </div>
 
         <div class="summary" id="summaryContainer">
-            <!-- Resumo será preenchido dinamicamente -->
-        </div>
+            </div>
 
         <div class="search-container">
             <button class="search-toggle" id="searchToggle">Mostrar Filtros</button>
@@ -694,8 +693,7 @@
         </div>
 
         <div id="resultsContainer">
-            <!-- Resultados serão preenchidos dinamicamente -->
-        </div>
+            </div>
     </div>
 
     <div id="modalContainer" class="modal">
@@ -703,8 +701,7 @@
             <span class="modal-close" id="modalClose">&times;</span>
             
             <div id="fichaContent">
-                <!-- Conteúdo da ficha será preenchido dinamicamente -->
-            </div>
+                </div>
             
             <button id="downloadPdfButton">Baixar PDF da Ficha</button>
         </div>
@@ -787,7 +784,10 @@
             
             // CORREÇÃO: Função específica para limpar valores monetários
             function limparValorMonetario(valor) {
-                if (typeof valor !== 'string' && typeof valor !== 'number') return valor;
+                // Se já for um número (lido do Excel com raw:true), apenas retorne
+                if (typeof valor === 'number') return valor;
+                
+                if (typeof valor !== 'string') return valor;
                 
                 let valorString = String(valor);
                 
@@ -816,7 +816,10 @@
             
             // CORREÇÃO: Função específica para limpar valores de área
             function limparValorArea(valor) {
-                if (typeof valor !== 'string' && typeof valor !== 'number') return valor;
+                // Se já for um número (lido do Excel com raw:true), apenas retorne
+                if (typeof valor === 'number') return valor;
+
+                if (typeof valor !== 'string') return valor;
                 
                 let valorString = String(valor);
                 
@@ -960,8 +963,11 @@
                     const firstSheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[firstSheetName];
                     
+                    // --- MELHORIA APLICADA AQUI ---
+                    // 'raw: true' lê os valores numéricos brutos da planilha (ex: 150000.50)
+                    // 'raw: false' (o anterior) lia o texto formatado (ex: "R$ 150.000,50")
                     const rawDataList = XLSX.utils.sheet_to_json(worksheet, { 
-                        raw: false, 
+                        raw: true, // Garante que números sejam lidos como números
                         defval: "" 
                     });
 
@@ -1040,15 +1046,20 @@
                         const internalKey = headerMapping[normalizedHeader]; 
                         
                         if (internalKey) {
-                            let value = String(rawRow[headerKey]);
+                            let value = rawRow[headerKey];
                             
                             if (camposTexto.includes(internalKey)) {
-                                value = removerAcentos(value);
-                            } else if (camposMonetarios.includes(internalKey)) {
-                                // CORREÇÃO: Usa função específica para valores monetários
+                                value = removerAcentos(String(value)); // Garante que é string
+                            } 
+                            // Se for lido como número (do Excel com raw:true) ou string (do CSV)
+                            // as funções de limpeza tratarão ambos os casos.
+                            else if (camposMonetarios.includes(internalKey)) {
                                 value = limparValorMonetario(value);
                             } else if (camposArea.includes(internalKey)) {
                                 value = limparValorArea(value);
+                            } else {
+                                // Para outros campos, apenas converta para string
+                                value = String(value);
                             }
                             
                             imovel[internalKey] = value;
