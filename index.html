@@ -86,7 +86,15 @@
             color: #666;
         }
 
-        /* --- BOTÕES DE CONFIGURAÇÃO --- */
+        /* --- NOVO: BARRA DE BOTÕES DE TOGGLE --- */
+        .button-bar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        /* --- BOTÕES DE CONFIGURAÇÃO / GRÁFICO --- */
         .config-toggle {
             background-color: var(--secondary-color);
             color: white;
@@ -96,7 +104,7 @@
             cursor: pointer;
             font-weight: bold;
             transition: var(--transition);
-            margin-bottom: 15px;
+            /* margin-bottom removido, agora está no .button-bar */
         }
 
         .config-toggle:hover {
@@ -235,10 +243,15 @@
             color: var(--primary-color); /* Verde principal no valor */
         }
 
-        /* --- SEÇÃO DO GRÁFICO --- */
+        /* --- SEÇÃO DO GRÁFICO (MODIFICADO) --- */
         .chart-container {
             position: relative;
             height: 300px; /* Altura fixa para o gráfico */
+            display: none; /* NOVO: Oculto por padrão */
+        }
+
+        .chart-container.active {
+            display: block; /* NOVO: Mostrar quando ativo */
         }
         
         .chart-container h3 {
@@ -641,6 +654,14 @@
             .chart-container {
                 height: 250px; /* Altura menor para celulares */
             }
+            
+            .button-bar {
+                flex-direction: column;
+            }
+            
+            .button-bar .config-toggle {
+                width: 100%;
+            }
         }
     </style>
 </head>
@@ -659,7 +680,9 @@
             </div>
         </header>
 
-        <button class="config-toggle" id="configToggle">Configurações do Sistema</button>
+        <div class="button-bar">
+            <button class="config-toggle" id="configToggle">Configurações do Sistema</button>
+            <button class="config-toggle" id="chartToggle">Mostrar Gráfico</button> </div>
 
         <div class="config-section" id="configSection">
             <div class="logo-section">
@@ -695,7 +718,7 @@
         <div class="summary" id="summaryContainer">
             </div>
         
-        <div class="chart-container">
+        <div class="chart-container" id="chartContainer">
             <h3>Imóveis por Empreendimento</h3>
             <p>Contagem de unidades agrupadas pelo nome do empreendimento (extraído da Unidade).</p>
             <canvas id="empreendimentoChart"></canvas>
@@ -774,6 +797,10 @@
             const fichaContent = document.getElementById('fichaContent');
             const downloadPdfButton = document.getElementById('downloadPdfButton');
 
+            // NOVO: Elementos do Gráfico
+            const chartToggle = document.getElementById('chartToggle');
+            const chartContainer = document.getElementById('chartContainer');
+
             // Banco de dados em memória
             let databaseImoveis = [];
             let myChart = null; // Variável global para o gráfico
@@ -795,7 +822,6 @@
                 return removerAcentos(texto).toLowerCase().trim();
             }
 
-            // Função específica para limpar valores monetários
             function limparValorMonetario(valor) {
                 if (typeof valor === 'number') return valor;
                 if (typeof valor !== 'string') return valor;
@@ -818,7 +844,6 @@
                 return isNaN(numero) ? valor : numero;
             }
             
-            // Função específica para limpar valores de área
             function limparValorArea(valor) {
                 if (typeof valor === 'number') return valor;
                 if (typeof valor !== 'string') return valor;
@@ -855,18 +880,10 @@
                 return `${numeroFormatado} m²`;
             }
             
-            // --- NOVA FUNÇÃO ---
-            /**
-             * Extrai o nome do empreendimento da string da unidade.
-             * Ex: "MAR DE CAPRI - APTO 101" -> "MAR DE CAPRI"
-             * Ex: "MAR DE CAPRI 101" -> "MAR DE CAPRI"
-             * Ex: "MAR DE CAPRI" -> "MAR DE CAPRI"
-             */
             function getEmpreendimentoNome(unidadeString) {
                 if (!unidadeString) return 'N/D';
-                let nome = String(unidadeString).trim().toUpperCase(); // Padroniza para ALL CAPS
+                let nome = String(unidadeString).trim().toUpperCase(); 
                 
-                // Lista de separadores, em ordem de prioridade
                 const separadores = [
                     ' - ', ' / ', ' BL ', ' APTO ', ' AP ', ' T-', 'TORRE', 'CASA'
                 ];
@@ -874,27 +891,21 @@
                 for (const sep of separadores) {
                     if (nome.includes(sep)) {
                         const index = nome.indexOf(sep);
-                        if (index > 0) { // Só faz o split se o separador NÃO estiver no início
+                        if (index > 0) { 
                             return nome.substring(0, index).trim();
                         }
                     }
                 }
 
-                // Se não achou separador de texto, tenta por número
-                // Ex: "MAR DE CAPRI 101" -> "MAR DE CAPRI"
-                // Regex: (qualquer coisa) (espaço) (dígito)
                 const match = nome.match(/^(.*?)\s+(\d)/);
-                if (match && match[1] && isNaN(match[1])) { // Garante que o nome não é só um número
+                if (match && match[1] && isNaN(match[1])) { 
                     return match[1].trim();
                 }
                 
-                // Fallback: Se não achou separador, mas não começa com um
-                // descritor de unidade, assume que a string inteira é o nome.
                 if (!nome.match(/^(AP|BL|T-|CASA|TORRE|\d)/)) {
-                    return nome; // Ex: "MAR DE CAPRI"
+                    return nome; 
                 }
 
-                // Se chegou aqui, é algo como "APTO 101" ou "101", que não tem nome
                 return 'Sem Empreendimento'; 
             }
 
@@ -1008,7 +1019,7 @@
                     const worksheet = workbook.Sheets[firstSheetName];
                     
                     const rawDataList = XLSX.utils.sheet_to_json(worksheet, { 
-                        raw: true, // Garante que números sejam lidos como números
+                        raw: true, 
                         defval: "" 
                     });
 
@@ -1153,7 +1164,7 @@
                 const status = [...new Set(databaseImoveis.map(imovel => imovel.status))].sort();
                 
                 cidades.forEach(cidade => {
-                    if(cidade) { // Evita opções vazias
+                    if(cidade) { 
                         const option = document.createElement('option');
                         option.value = cidade;
                         option.textContent = cidade;
@@ -1214,16 +1225,13 @@
                 `;
             }
 
-            // --- MODIFICADO: updateChart ---
+            // --- updateChart ---
             function updateChart() {
                 const ctx = document.getElementById('empreendimentoChart').getContext('2d');
 
-                // 1. Agrupar dados usando a nova função
                 const countsByEmpreendimento = databaseImoveis.reduce((acc, imovel) => {
-                    // USA A NOVA FUNÇÃO AQUI
-                    let empreendimentoNome = getEmpreendimentoNome(imovel.unidade); // A função já retorna 'N/D' ou o nome
+                    let empreendimentoNome = getEmpreendimentoNome(imovel.unidade); 
 
-                    // Agrupa qualquer coisa não identificada
                     if (empreendimentoNome === 'N/D' || empreendimentoNome === 'Sem Empreendimento' || empreendimentoNome === '') {
                         empreendimentoNome = 'Outros / Não Identificado';
                     }
@@ -1232,16 +1240,13 @@
                     return acc;
                 }, {});
 
-                // 2. Preparar dados para o gráfico
                 const labels = Object.keys(countsByEmpreendimento).sort();
                 const data = labels.map(label => countsByEmpreendimento[label]);
 
-                // 3. Destruir gráfico antigo se existir
                 if (myChart) {
                     myChart.destroy();
                 }
 
-                // 4. Criar novo gráfico
                 myChart = new Chart(ctx, {
                     type: 'bar',
                     data: {
@@ -1249,10 +1254,10 @@
                         datasets: [{
                             label: 'Qtd. de Imóveis',
                             data: data,
-                            backgroundColor: [ // Usar cores da paleta
-                                'rgba(76, 175, 80, 0.7)',  /* --primary-color */
-                                'rgba(33, 150, 243, 0.7)', /* --secondary-color */
-                                'rgba(139, 195, 74, 0.7)', /* --tertiary-color */
+                            backgroundColor: [ 
+                                'rgba(76, 175, 80, 0.7)',  
+                                'rgba(33, 150, 243, 0.7)', 
+                                'rgba(139, 195, 74, 0.7)', 
                                 'rgba(255, 152, 0, 0.7)',  
                                 'rgba(156, 39, 176, 0.7)'
                             ],
@@ -1280,7 +1285,7 @@
                         },
                         plugins: {
                             legend: {
-                                display: false // Oculta a legenda (só há 1 dataset)
+                                display: false 
                             }
                         }
                     }
@@ -1530,7 +1535,6 @@
                 modalContainer.style.display = 'none';
             }
 
-            // PDF (Usando a versão melhorada da última interação)
             function downloadPdf(imovel) {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
@@ -1540,10 +1544,10 @@
                 const margin = 15; 
                 const contentWidth = pageWidth - 2 * margin;
                 
-                const colorPrimary = [76, 175, 80]; // Verde Principal (#4CAF50)
-                const colorSecondary = [33, 150, 243]; // Azul Secundário (#2196F3)
-                const colorTertiary = [139, 195, 74]; // Verde Claro (#8BC34A)
-                const colorDanger = [244, 67, 54]; // Vermelho (#F44336)
+                const colorPrimary = [76, 175, 80]; 
+                const colorSecondary = [33, 150, 243]; 
+                const colorTertiary = [139, 195, 74]; 
+                const colorDanger = [244, 67, 54]; 
                 
                 doc.setDrawColor(200, 200, 200); 
                 doc.setLineWidth(0.5);
@@ -1573,7 +1577,6 @@
                 
                 let yPosition = 75; 
 
-                // BLOCO 1: INFORMAÇÕES PRINCIPAIS (Verde Claro)
                 const blockHeaderHeight = 10;
                 doc.setFillColor(...colorTertiary);
                 doc.roundedRect(margin, yPosition, contentWidth, blockHeaderHeight, 3, 0, 'F');
@@ -1582,7 +1585,6 @@
                 doc.setFontSize(11);
                 doc.text('INFORMAÇÕES PRINCIPAIS', margin + 5, yPosition + 7);
                 
-                // NOVO LOCAL DO STATUS (DENTRO DO BLOCO 1)
                 const statusText = imovel.status || 'N/D';
                 const isDisponivel = imovel.status && normalizarTexto(imovel.status) === 'disponivel';
                 const statusColor = isDisponivel ? colorPrimary : colorDanger; 
@@ -1602,7 +1604,6 @@
 
                 yPosition += blockHeaderHeight; 
                 
-                // Conteúdo do Bloco 1
                 doc.setTextColor(0, 0, 0);
                 doc.setFontSize(16);
                 doc.setFont(undefined, 'bold');
@@ -1617,7 +1618,6 @@
                 yPosition += 15; 
 
                 
-                // BLOCO 2: VALORES (Azul)
                 doc.setFillColor(...colorSecondary);
                 doc.roundedRect(margin, yPosition, contentWidth, blockHeaderHeight, 3, 3, 'F');
                 doc.setTextColor(255, 255, 255);
@@ -1636,7 +1636,6 @@
                 doc.text(`Bom Pagador: ${formatarMoeda(imovel.bomPagador)}`, margin + 5, yPosition);
                 yPosition += 15;
 
-                // BLOCO 3: ÁREAS (Azul)
                 doc.setFillColor(...colorSecondary);
                 doc.roundedRect(margin, yPosition, contentWidth, blockHeaderHeight, 3, 3, 'F');
                 doc.setTextColor(255, 255, 255);
@@ -1655,7 +1654,6 @@
                 doc.text(`Área da Varanda: ${formatarArea(imovel.areaVaranda)}`, margin + 5, yPosition);
                 yPosition += 15;
 
-                // BLOCO 4: CARACTERÍSTICAS (Azul)
                 doc.setFillColor(...colorSecondary);
                 doc.roundedRect(margin, yPosition, contentWidth, blockHeaderHeight, 3, 3, 'F');
                 doc.setTextColor(255, 255, 255);
@@ -1677,7 +1675,6 @@
                 doc.text(`Vagas Moto: ${imovel.vagasMoto || 'N/D'}`, margin + 5, yPosition);
                 yPosition += 15;
 
-                // BLOCO 5: INFORMAÇÕES ADICIONAIS (Azul)
                 doc.setFillColor(...colorSecondary);
                 doc.roundedRect(margin, yPosition, contentWidth, blockHeaderHeight, 3, 3, 'F');
                 doc.setTextColor(255, 255, 255);
@@ -1697,7 +1694,6 @@
                 doc.text(`Oportunidades: ${imovel.oportunidades || 'N/D'}`, pageWidth / 2, yPosition);
                 
                 
-                // RODAPÉ
                 const data = new Date().toLocaleDateString('pt-BR');
                 const hora = new Date().toLocaleTimeString('pt-BR');
                 
@@ -1716,7 +1712,7 @@
             searchUnidadeInput.addEventListener('input', filterImoveis);
             searchCidadeSelect.addEventListener('change', filterImoveis);
             searchTipologiaSelect.addEventListener('change', filterImoveis);
-            searchStatusSelect.addEventListener('change', filterImomeis);
+            searchStatusSelect.addEventListener('change', filterImoveis);
             searchValorMinInput.addEventListener('input', filterImoveis);
             searchValorMaxInput.addEventListener('input', filterImoveis);
             searchAreaMinInput.addEventListener('input', filterImoveis);
@@ -1746,6 +1742,13 @@
                 searchBar.classList.toggle('active');
                 searchToggle.textContent = searchBar.classList.contains('active') ? 
                     'Ocultar Filtros' : 'Mostrar Filtros';
+            });
+
+            // NOVO: Toggle para Gráfico
+            chartToggle.addEventListener('click', () => {
+                chartContainer.classList.toggle('active');
+                chartToggle.textContent = chartContainer.classList.contains('active') ? 
+                    'Ocultar Gráfico' : 'Mostrar Gráfico';
             });
 
             // Carregar dados ao iniciar
