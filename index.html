@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -266,7 +267,6 @@
             margin-bottom: 15px;
         }
 
-
         /* --- BARRA DE PESQUISA --- */
         .search-container {
             position: relative;
@@ -521,6 +521,15 @@
             grid-column: 1 / -1;
         }
 
+        /* --- BOTÃO RELATÓRIO DE ESTOQUE --- */
+        #estoqueButton {
+            background-color: #FF9800;
+            color: white;
+        }
+        #estoqueButton:hover {
+            background-color: #F57C00;
+        }
+
         /* -------------------------------------------
         --- RESPONSIVIDADE ---
         -------------------------------------------
@@ -683,7 +692,8 @@
 
         <div class="button-bar">
             <button class="config-toggle" id="configToggle">Configurações do Sistema</button>
-            <button class="config-toggle" id="chartToggle">Mostrar Gráfico</button> 
+            <button class="config-toggle" id="chartToggle">Mostrar Gráfico</button>
+            <button class="config-toggle" id="estoqueButton">Relatório de Estoque</button>
         </div>
 
         <div class="config-section" id="configSection">
@@ -725,7 +735,6 @@
             <p>Contagem de unidades agrupadas pelo nome do empreendimento (extraído da Unidade).</p>
             <canvas id="empreendimentoChart"></canvas>
         </div>
-
 
         <div class="search-container">
             <button class="search-toggle" id="searchToggle">Mostrar Filtros</button>
@@ -802,6 +811,9 @@
             // Elementos do Gráfico
             const chartToggle = document.getElementById('chartToggle');
             const chartContainer = document.getElementById('chartContainer');
+
+            // Elemento do Relatório de Estoque
+            const estoqueButton = document.getElementById('estoqueButton');
 
             // Banco de dados em memória
             let databaseImoveis = [];
@@ -910,7 +922,6 @@
 
                 return 'Sem Empreendimento'; 
             }
-
 
             // --- FUNÇÕES DE CONFIGURAÇÃO ---
 
@@ -1721,6 +1732,242 @@
                 doc.save(`ficha_imovel_${imovel.unidade}.pdf`);
             }
 
+            // --- NOVA FUNÇÃO: RELATÓRIO DE ESTOQUE OTIMIZADO ---
+            function gerarRelatorioEstoque() {
+                if (databaseImoveis.length === 0) {
+                    alert('Não há dados para gerar o relatório de estoque.');
+                    return;
+                }
+
+                // Capturar o gráfico como imagem
+                const canvas = document.getElementById('empreendimentoChart');
+                
+                html2canvas(canvas).then(chartCanvas => {
+                    const chartImage = chartCanvas.toDataURL('image/png');
+                    
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF('landscape'); // Usar orientação paisagem para mais espaço
+                    
+                    const pageWidth = doc.internal.pageSize.getWidth();
+                    const pageHeight = doc.internal.pageSize.getHeight();
+                    const margin = 10; // Margem menor para otimizar espaço
+                    const contentWidth = pageWidth - 2 * margin;
+                    
+                    const colorPrimary = [76, 175, 80];
+                    const colorSecondary = [33, 150, 243];
+                    const colorTertiary = [139, 195, 74];
+                    const colorOrange = [255, 152, 0];
+                    const colorPurple = [156, 39, 176];
+                    
+                    // Cabeçalho mais compacto
+                    doc.setFillColor(...colorPrimary);
+                    doc.rect(margin - 1, 5, contentWidth + 2, 35, 'F');
+                    
+                    const logoData = localStorage.getItem(LOGO_STORAGE_KEY);
+                    if (logoData) {
+                        try {
+                            doc.addImage(logoData, 'PNG', margin + 5, 8, 25, 20);
+                        } catch (e) {
+                            console.error('Erro ao adicionar logo ao PDF:', e);
+                        }
+                    }
+                    
+                    const textX = logoData ? margin + 35 : margin + 5;
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFontSize(16);
+                    doc.setFont(undefined, 'bold');
+                    doc.text('RELATÓRIO DE ESTOQUE - MRV', textX, 18);
+                    
+                    doc.setFontSize(10);
+                    doc.setFont(undefined, 'normal');
+                    doc.text('Análise completa do estoque de imóveis', textX, 26);
+                    
+                    let yPosition = 45;
+                    
+                    // Resumo Geral em duas colunas
+                    const col1X = margin + 5;
+                    const col2X = pageWidth / 2 + 5;
+                    
+                    doc.setFillColor(...colorTertiary);
+                    doc.roundedRect(margin, yPosition, contentWidth, 8, 2, 2, 'F');
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFont(undefined, 'bold');
+                    doc.setFontSize(9);
+                    doc.text('RESUMO GERAL', margin + 5, yPosition + 5.5);
+                    yPosition += 12;
+                    
+                    const totalImoveis = databaseImoveis.length;
+                    const imoveisDisponiveis = databaseImoveis.filter(imovel => 
+                        imovel.status && normalizarTexto(imovel.status) === 'disponivel'
+                    ).length;
+                    
+                    const valorTotal = databaseImoveis.reduce((sum, imovel) => 
+                        sum + (parseFloat(imovel.valorImovel) || 0), 0);
+                    
+                    const valorMedio = totalImoveis > 0 ? valorTotal / totalImoveis : 0;
+                    
+                    doc.setTextColor(0, 0, 0);
+                    doc.setFont(undefined, 'normal');
+                    doc.setFontSize(8);
+                    doc.text(`Total de Imóveis: ${totalImoveis}`, col1X, yPosition);
+                    doc.text(`Imóveis Disponíveis: ${imoveisDisponiveis}`, col2X, yPosition);
+                    yPosition += 5;
+                    doc.text(`Valor Total: ${formatarMoeda(valorTotal)}`, col1X, yPosition);
+                    doc.text(`Valor Médio: ${formatarMoeda(valorMedio)}`, col2X, yPosition);
+                    yPosition += 10;
+                    
+                    // Gráfico
+                    const chartWidth = contentWidth * 0.6;
+                    const chartHeight = 80;
+                    doc.addImage(chartImage, 'PNG', margin, yPosition, chartWidth, chartHeight);
+                    
+                    // Estatísticas ao lado do gráfico
+                    const statsX = margin + chartWidth + 5;
+                    const statsWidth = contentWidth - chartWidth - 5;
+                    
+                    // Estoque por Status
+                    doc.setFillColor(...colorOrange);
+                    doc.roundedRect(statsX, yPosition, statsWidth, 8, 2, 2, 'F');
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFont(undefined, 'bold');
+                    doc.setFontSize(9);
+                    doc.text('ESTOQUE POR STATUS', statsX + 5, yPosition + 5.5);
+                    yPosition += 12;
+                    
+                    const estoquePorStatus = databaseImoveis.reduce((acc, imovel) => {
+                        const status = imovel.status || 'Não Informado';
+                        acc[status] = (acc[status] || 0) + 1;
+                        return acc;
+                    }, {});
+                    
+                    Object.keys(estoquePorStatus).sort().forEach(status => {
+                        if (yPosition > yPosition + chartHeight - 15) return;
+                        
+                        doc.setTextColor(0, 0, 0);
+                        doc.setFont(undefined, 'normal');
+                        doc.setFontSize(8);
+                        doc.text(`${status}: ${estoquePorStatus[status]}`, statsX + 5, yPosition);
+                        yPosition += 4.5;
+                    });
+                    
+                    yPosition += 5;
+                    
+                    // Estoque por Cidade (top 5)
+                    doc.setFillColor(...colorSecondary);
+                    doc.roundedRect(statsX, yPosition, statsWidth, 8, 2, 2, 'F');
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFont(undefined, 'bold');
+                    doc.setFontSize(9);
+                    doc.text('TOP 5 CIDADES', statsX + 5, yPosition + 5.5);
+                    yPosition += 12;
+                    
+                    const estoquePorCidade = databaseImoveis.reduce((acc, imovel) => {
+                        const cidade = imovel.cidade || 'Não Informada';
+                        acc[cidade] = (acc[cidade] || 0) + 1;
+                        return acc;
+                    }, {});
+                    
+                    // Ordenar e pegar top 5
+                    const topCidades = Object.keys(estoquePorCidade)
+                        .sort((a, b) => estoquePorCidade[b] - estoquePorCidade[a])
+                        .slice(0, 5);
+                    
+                    topCidades.forEach(cidade => {
+                        if (yPosition > yPosition + chartHeight - 15) return;
+                        
+                        doc.setTextColor(0, 0, 0);
+                        doc.setFont(undefined, 'normal');
+                        doc.setFontSize(8);
+                        doc.text(`${cidade}: ${estoquePorCidade[cidade]}`, statsX + 5, yPosition);
+                        yPosition += 4.5;
+                    });
+                    
+                    yPosition = 45 + chartHeight + 15;
+                    
+                    // Estoque por Empreendimento (top 10)
+                    doc.setFillColor(...colorPurple);
+                    doc.roundedRect(margin, yPosition, contentWidth, 8, 2, 2, 'F');
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFont(undefined, 'bold');
+                    doc.setFontSize(9);
+                    doc.text('TOP 10 EMPREENDIMENTOS', margin + 5, yPosition + 5.5);
+                    yPosition += 12;
+                    
+                    const estoquePorEmpreendimento = databaseImoveis.reduce((acc, imovel) => {
+                        const empreendimento = getEmpreendimentoNome(imovel.unidade);
+                        acc[empreendimento] = (acc[empreendimento] || 0) + 1;
+                        return acc;
+                    }, {});
+                    
+                    // Ordenar por quantidade (maior para menor) e pegar top 10
+                    const topEmpreendimentos = Object.keys(estoquePorEmpreendimento)
+                        .sort((a, b) => estoquePorEmpreendimento[b] - estoquePorEmpreendimento[a])
+                        .slice(0, 10);
+                    
+                    // Dividir em duas colunas
+                    const empreendCol1X = margin + 5;
+                    const empreendCol2X = pageWidth / 2 + 5;
+                    let empreendY = yPosition;
+                    
+                    topEmpreendimentos.forEach((empreendimento, index) => {
+                        const colX = index < 5 ? empreendCol1X : empreendCol2X;
+                        const colY = empreendY + (index % 5) * 4.5;
+                        
+                        doc.setTextColor(0, 0, 0);
+                        doc.setFont(undefined, 'normal');
+                        doc.setFontSize(8);
+                        doc.text(`${empreendimento}: ${estoquePorEmpreendimento[empreendimento]}`, colX, colY);
+                    });
+                    
+                    yPosition += 25;
+                    
+                    // Estoque por Tipologia (top 5)
+                    doc.setFillColor(...colorTertiary);
+                    doc.roundedRect(margin, yPosition, contentWidth, 8, 2, 2, 'F');
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFont(undefined, 'bold');
+                    doc.setFontSize(9);
+                    doc.text('TOP 5 TIPOLOGIAS', margin + 5, yPosition + 5.5);
+                    yPosition += 12;
+                    
+                    const estoquePorTipologia = databaseImoveis.reduce((acc, imovel) => {
+                        const tipologia = imovel.tipologia || 'Não Informada';
+                        acc[tipologia] = (acc[tipologia] || 0) + 1;
+                        return acc;
+                    }, {});
+                    
+                    // Ordenar e pegar top 5
+                    const topTipologias = Object.keys(estoquePorTipologia)
+                        .sort((a, b) => estoquePorTipologia[b] - estoquePorTipologia[a])
+                        .slice(0, 5);
+                    
+                    // Dividir em duas colunas
+                    const tipologiaCol1X = margin + 5;
+                    const tipologiaCol2X = pageWidth / 2 + 5;
+                    let tipologiaY = yPosition;
+                    
+                    topTipologias.forEach((tipologia, index) => {
+                        const colX = index < 3 ? tipologiaCol1X : tipologiaCol2X;
+                        const colY = tipologiaY + (index % 3) * 4.5;
+                        
+                        doc.setTextColor(0, 0, 0);
+                        doc.setFont(undefined, 'normal');
+                        doc.setFontSize(8);
+                        doc.text(`${tipologia}: ${estoquePorTipologia[tipologia]}`, colX, colY);
+                    });
+                    
+                    // Rodapé
+                    const data = new Date().toLocaleDateString('pt-BR');
+                    const hora = new Date().toLocaleTimeString('pt-BR');
+                    
+                    doc.setFontSize(7);
+                    doc.setTextColor(100, 100, 100);
+                    doc.text(`Gerado em: ${data} às ${hora}`, margin, pageHeight - 5);
+                    doc.text(`Total de registros: ${totalImoveis}`, pageWidth - margin, pageHeight - 5, { align: 'right' });
+                    
+                    doc.save(`relatorio_estoque_mrv_${data.replace(/\//g, '-')}.pdf`);
+                });
+            }
 
             // --- EVENT LISTENERS ---
 
@@ -1766,6 +2013,9 @@
                 chartToggle.textContent = chartContainer.classList.contains('active') ? 
                     'Ocultar Gráfico' : 'Mostrar Gráfico';
             });
+
+            // Relatório de Estoque
+            estoqueButton.addEventListener('click', gerarRelatorioEstoque);
 
             // Carregar dados ao iniciar
             loadDataFromStorage();
